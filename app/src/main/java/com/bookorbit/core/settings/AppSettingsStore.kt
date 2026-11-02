@@ -30,6 +30,7 @@ class AppSettingsStore @Inject constructor(
 ) {
     private val themeModeKey = stringPreferencesKey("theme_mode")
     private val wifiOnlyDownloadsKey = booleanPreferencesKey("wifi_only_downloads")
+    private val downloadOnOpenKey = booleanPreferencesKey("download_on_open")
     private val dynamicColorKey = booleanPreferencesKey("dynamic_color")
     private val comicRtlKey = booleanPreferencesKey("comic_rtl")
     private val seriesViewModeKey = stringPreferencesKey("series_view_mode")
@@ -86,6 +87,13 @@ class AppSettingsStore @Inject constructor(
 
     suspend fun setWifiOnlyDownloads(enabled: Boolean) {
         context.appSettingsDataStore.edit { it[wifiOnlyDownloadsKey] = enabled }
+    }
+
+    /** Opening a book keeps it on the device, as the Kindle app does, so it reads offline from then on. */
+    val downloadOnOpen = context.appSettingsDataStore.data.map { it[downloadOnOpenKey] ?: true }
+
+    suspend fun setDownloadOnOpen(enabled: Boolean) {
+        context.appSettingsDataStore.edit { it[downloadOnOpenKey] = enabled }
     }
 
     val seriesViewMode = context.appSettingsDataStore.data.map { prefs ->

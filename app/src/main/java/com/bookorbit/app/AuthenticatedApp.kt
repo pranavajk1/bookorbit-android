@@ -2,7 +2,10 @@ package com.bookorbit.app
 
 import com.bookorbit.ui.theme.Motion
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.dropUnlessResumed
 import androidx.navigation.NavType
@@ -11,11 +14,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.bookorbit.core.model.AuthUser
+import com.bookorbit.feature.downloads.BookAvailabilityViewModel
 import com.bookorbit.feature.main.MainShell
 import com.bookorbit.feature.player.PlayerScreen
 import com.bookorbit.feature.player.PlayerViewModel
 import com.bookorbit.feature.reader.ReaderDestination
 import com.bookorbit.feature.reader.ReaderKind
+import com.bookorbit.ui.LocalBookAvailability
 
 /**
  * App-level navigation host for the signed-in area. Holds full-screen destinations that sit OUTSIDE
@@ -29,6 +34,15 @@ import com.bookorbit.feature.reader.ReaderKind
  */
 @Composable
 fun AuthenticatedApp(user: AuthUser, onSignOut: () -> Unit) {
+    val availabilityVm: BookAvailabilityViewModel = hiltViewModel()
+    val availability by availabilityVm.availability.collectAsStateWithLifecycle()
+    CompositionLocalProvider(LocalBookAvailability provides availability) {
+        AppNavHost(user, onSignOut)
+    }
+}
+
+@Composable
+private fun AppNavHost(user: AuthUser, onSignOut: () -> Unit) {
     val navController = rememberNavController()
     // Shared player VM at the app-nav scope so "Listen" can start playback before navigating.
     val playerVm: PlayerViewModel = hiltViewModel()

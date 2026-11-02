@@ -69,6 +69,7 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
     val themeMode by vm.themeMode.collectAsStateWithLifecycle()
     val navItems by vm.navItems.collectAsStateWithLifecycle()
     val wifiOnly by vm.wifiOnlyDownloads.collectAsStateWithLifecycle()
+    val downloadOnOpen by vm.downloadOnOpen.collectAsStateWithLifecycle()
     val dynamicColor by vm.dynamicColor.collectAsStateWithLifecycle()
     val trustUserCas by vm.trustUserCas.collectAsStateWithLifecycle()
     val downloadsSummary by vm.downloadsSummary.collectAsStateWithLifecycle()
@@ -221,6 +222,13 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
             item { HorizontalDivider() }
 
             item { SectionHeader(stringResource(R.string.downloads)) }
+            item {
+                SettingsRow(
+                    title = stringResource(R.string.settings_download_on_open),
+                    subtitle = stringResource(R.string.settings_download_on_open_desc),
+                    trailing = { Switch(checked = downloadOnOpen, onCheckedChange = vm::setDownloadOnOpen) },
+                )
+            }
             item {
                 SettingsRow(
                     title = stringResource(R.string.settings_wifi_only),

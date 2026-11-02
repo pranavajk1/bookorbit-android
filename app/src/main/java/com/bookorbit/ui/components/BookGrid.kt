@@ -122,3 +122,29 @@ fun BookGrid(
         }
     }
 }
+
+/**
+ * A cover grid of a list already in hand, laid out like [BookGrid]: the books on the device, shown
+ * where a paged list can't load because the server can't be reached.
+ */
+@Composable
+fun BookListGrid(
+    books: List<com.bookorbit.core.model.BookCard>,
+    onBookClick: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    header: (LazyGridScope.() -> Unit)? = null,
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(minSize = 104.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+        modifier = modifier.fillMaxSize(),
+    ) {
+        header?.invoke(this)
+        items(books.size, key = { books[it].id }) { index ->
+            val book = books[index]
+            BookCard(book = book, onClick = { onBookClick(book.id) })
+        }
+    }
+}

@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ReaderProgressDao {
@@ -12,6 +13,9 @@ interface ReaderProgressDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: ReaderProgressEntity)
+
+    @Query("SELECT * FROM reader_progress")
+    fun observeAll(): Flow<List<ReaderProgressEntity>>
 
     @Query("SELECT * FROM reader_progress WHERE dirty = 1")
     suspend fun dirtyEntries(): List<ReaderProgressEntity>

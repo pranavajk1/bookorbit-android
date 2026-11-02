@@ -458,4 +458,17 @@
     <string name="no_authors_found">No authors found.</string>
     <string name="you_more">More</string>
     <string name="you_account">Account</string>
+    <!-- Offline -->
+    <string name="on_this_device">On this device</string>
+    <string name="offline_banner_title">You\'re offline</string>
+    <string name="offline_banner_message">Showing your downloads and what was loaded last.</string>
+    <string name="offline_library_message">Showing the books on this device.</string>
+    <string name="home_offline_empty_title">Nothing on this device yet</string>
+    <string name="home_offline_empty_message">Books you open are kept on this device, so they\'re here to read when you\'re offline.</string>
+    <string name="detail_offline_title">This book isn\'t on this device</string>
+    <string name="detail_offline_message">Connect to the internet to see it and read it. Books you open stay on the device for next time.</string>
+    <string name="reader_err_not_on_device">This book isn\'t on this device yet. Connect to the internet to download it.</string>
+    <string name="reader_downloading_book">Downloading book… %1$d%%</string>
+    <string name="settings_download_on_open">Keep books you open</string>
+    <string name="settings_download_on_open_desc">Opening a book downloads it, so it\'s there to read offline</string>
 </resources>

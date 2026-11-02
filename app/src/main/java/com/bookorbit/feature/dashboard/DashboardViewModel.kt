@@ -7,12 +7,16 @@ import com.bookorbit.core.model.BookCard
 import com.bookorbit.core.model.ReadingGoalWidget
 import com.bookorbit.core.model.ReadingStreakWidget
 import com.bookorbit.core.model.ScrollerType
+import com.bookorbit.core.network.Connectivity
 import com.bookorbit.feature.browse.BrowseRepository
+import com.bookorbit.feature.downloads.OnDeviceBooks
 import com.bookorbit.feature.reader.ReaderProgressRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -20,6 +24,8 @@ import javax.inject.Inject
 class DashboardViewModel @Inject constructor(
     private val repo: BrowseRepository,
     readerProgress: ReaderProgressRepository,
+    onDeviceBooks: OnDeviceBooks,
+    private val connectivity: Connectivity,
 ) : ViewModel() {
 
     data class UiState(
@@ -27,8 +33,12 @@ class DashboardViewModel @Inject constructor(
         val continueListening: List<BookCard> = emptyList(),
         val recentlyAdded: List<BookCard> = emptyList(),
         val loading: Boolean = true,
-        /** True when every scroller request failed — distinct from a genuinely empty library. */
+        /** True when every scroller request failed while online — distinct from a genuinely empty library. */
         val error: Boolean = false,
+        /** The server can't be reached: Home leads with the books on the device, then what it last loaded. */
+        val offline: Boolean = false,
+        /** Downloaded books, most recently read first. */
+        val onDevice: List<BookCard> = emptyList(),
         /** Null when the server predates the widget endpoints (or the call failed): the strip is simply hidden. */
         val streak: ReadingStreakWidget? = null,
         val goal: ReadingGoalWidget? = null,
@@ -43,6 +53,14 @@ class DashboardViewModel @Inject constructor(
 
     init {
         refresh()
+        viewModelScope.launch { onDeviceBooks.books.collect { books -> _ui.update { it.copy(onDevice = books) } } }
+        viewModelScope.launch {
+            connectivity.offline.drop(1).collect { offline ->
+                _ui.update { it.copy(offline = offline) }
+                // Back in touch with the server: swap what was kept for what's current.
+                if (!offline) load(quiet = true)
+            }
+        }
     }
 
     /** A pull to refresh: reload with the spinner showing. */
@@ -56,7 +74,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     private fun load(quiet: Boolean) {
-        if (!quiet) _ui.value = _ui.value.copy(loading = true)
+        if (!quiet) _ui.update { it.copy(loading = true) }
         viewModelScope.launch {
             var failures = 0
             suspend fun load(type: String): List<BookCard> =
@@ -75,15 +93,19 @@ class DashboardViewModel @Inject constructor(
             val reading = continueReading.await()
             val listening = continueListening.await()
             val recent = recentlyAdded.await()
-            _ui.value = UiState(
-                reading,
-                listening,
-                recent,
-                loading = false,
-                error = failures == 3,
-                streak = streak.await(),
-                goal = goal.await(),
-            )
+            val offline = connectivity.offline.value
+            _ui.update {
+                it.copy(
+                    continueReading = reading,
+                    continueListening = listening,
+                    recentlyAdded = recent,
+                    loading = false,
+                    error = failures == 3 && !offline,
+                    offline = offline,
+                    streak = streak.await(),
+                    goal = goal.await(),
+                )
+            }
         }
     }
 }

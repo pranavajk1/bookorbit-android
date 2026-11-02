@@ -1,8 +1,12 @@
 package com.bookorbit.feature.library
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DownloadDone
 import androidx.compose.material.icons.outlined.LibraryBooks
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Badge
@@ -21,8 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.bookorbit.R
@@ -31,8 +37,10 @@ import com.bookorbit.core.model.Library
 import com.bookorbit.feature.library.filters.countActiveFilters
 import com.bookorbit.feature.main.LibrarySection
 import com.bookorbit.ui.components.BookGrid
+import com.bookorbit.ui.components.BookListGrid
 import com.bookorbit.ui.components.EmptyState
 import com.bookorbit.ui.components.ErrorState
+import com.bookorbit.ui.components.OfflineBanner
 import com.bookorbit.ui.components.PageHeader
 
 @Composable
@@ -47,6 +55,8 @@ fun LibrariesScreen(
     val filters by vm.filters.collectAsStateWithLifecycle()
     val sort by vm.sort.collectAsStateWithLifecycle()
     val books = vm.books.collectAsLazyPagingItems()
+    val offline by vm.offline.collectAsStateWithLifecycle()
+    val onDevice by vm.onDevice.collectAsStateWithLifecycle()
     var sheetOpen by remember { mutableStateOf(false) }
 
     LibrariesContent(
@@ -55,6 +65,8 @@ fun LibrariesScreen(
         selectedId = selectedId,
         activeFilterCount = countActiveFilters(filters),
         books = books,
+        offline = offline,
+        onDevice = onDevice,
         tabs = tabs,
         onSelectLibrary = vm::selectLibrary,
         onOpenFilters = { sheetOpen = true },
@@ -92,6 +104,8 @@ internal fun LibrariesContent(
     onOpenFilters: () -> Unit,
     onRetry: () -> Unit,
     onBookClick: (Int) -> Unit,
+    offline: Boolean = false,
+    onDevice: List<BookCard> = emptyList(),
 ) {
     val selected = libraries.firstOrNull { it.id == selectedId }
     var pickerOpen by remember { mutableStateOf(false) }
@@ -138,11 +152,45 @@ internal fun LibrariesContent(
             LibrariesViewModel.Status.EMPTY -> Box(Modifier.fillMaxSize(), Alignment.Center) {
                 EmptyState(Icons.Outlined.LibraryBooks, stringResource(R.string.you_don_t_have_access))
             }
-            else -> BookGrid(
-                items = books,
-                onBookClick = onBookClick,
-                emptyText = stringResource(R.string.no_books_in_this_library),
-            )
+            LibrariesViewModel.Status.OFFLINE -> OnDeviceGrid(onDevice, onBookClick)
+            // Offline with nothing kept for this view: the books on the device instead of an error.
+            else -> if (offline && books.itemCount == 0 && books.loadState.refresh is LoadState.Error) {
+                OnDeviceGrid(onDevice, onBookClick)
+            } else {
+                BookGrid(
+                    items = books,
+                    onBookClick = onBookClick,
+                    emptyText = stringResource(R.string.no_books_in_this_library),
+                    header = if (offline) ({ item(span = { GridItemSpan(maxLineSpan) }) { OfflineBanner() } }) else null,
+                )
+            }
         }
     }
+}
+
+/** The downloaded books, under the offline banner, or a note that there are none yet. */
+@Composable
+private fun OnDeviceGrid(books: List<BookCard>, onBookClick: (Int) -> Unit) {
+    if (books.isEmpty()) {
+        Column(Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp)) {
+            OfflineBanner()
+            Box(Modifier.fillMaxSize(), Alignment.Center) {
+                EmptyState(
+                    Icons.Outlined.DownloadDone,
+                    stringResource(R.string.home_offline_empty_title),
+                    message = stringResource(R.string.home_offline_empty_message),
+                )
+            }
+        }
+        return
+    }
+    BookListGrid(
+        books = books,
+        onBookClick = onBookClick,
+        header = {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                OfflineBanner(message = stringResource(R.string.offline_library_message))
+            }
+        },
+    )
 }

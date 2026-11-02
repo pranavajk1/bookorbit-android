@@ -76,6 +76,7 @@ import com.bookorbit.core.model.BookAnnotation
 import com.bookorbit.core.model.BookDetail
 import com.bookorbit.core.model.BookFiles
 import com.bookorbit.feature.reader.highlightColor
+import com.bookorbit.ui.LocalBookAvailability
 import com.bookorbit.ui.LocalImageUrls
 import com.bookorbit.ui.components.BookCover
 import com.bookorbit.ui.components.CoverBackdrop
@@ -200,13 +201,24 @@ internal fun BookDetailContent(
 ) {
     val imageUrls = LocalImageUrls.current
     val book = ui.book
-    val coverModel = book?.let { imageUrls.cover(it.id) }
+    val coverModel = book?.let { LocalBookAvailability.current.localCover(it.id) ?: imageUrls.cover(it.id) }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         if (maxWidth >= TwoColumnWidth) CoverBackdrop(coverModel, Modifier.fillMaxWidth().height(420.dp))
         when {
             ui.loading -> Box(Modifier.fillMaxSize(), Alignment.Center) { CircularProgressIndicator() }
             ui.error || book == null -> Box(Modifier.fillMaxSize(), Alignment.Center) {
-                ErrorState(stringResource(R.string.failed_to_load_book_details), onRetry = actions.onRetry)
+                val offline = LocalBookAvailability.current.offline
+                // Back online: the details can load now.
+                LaunchedEffect(offline) { if (!offline && ui.error) actions.onRetry() }
+                if (offline) {
+                    ErrorState(
+                        stringResource(R.string.detail_offline_title),
+                        onRetry = actions.onRetry,
+                        message = stringResource(R.string.detail_offline_message),
+                    )
+                } else {
+                    ErrorState(stringResource(R.string.failed_to_load_book_details), onRetry = actions.onRetry)
+                }
             }
             maxWidth >= TwoColumnWidth -> Row(Modifier.fillMaxSize()) {
                 Column(

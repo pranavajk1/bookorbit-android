@@ -10,6 +10,7 @@ import com.bookorbit.core.model.OidcCallbackResponse
 import com.bookorbit.core.model.OidcProviderPublic
 import com.bookorbit.core.model.SetupStatus
 import com.bookorbit.core.network.ApiService
+import com.bookorbit.core.network.OfflineCacheInterceptor
 import kotlinx.serialization.SerializationException
 import retrofit2.HttpException
 import javax.inject.Inject
@@ -83,6 +84,8 @@ class AuthRepository @Inject constructor(
     suspend fun logout() {
         runCatching { api.logout() }
         session.signOut()
+        // What the server showed this user isn't kept past signing out.
+        OfflineCacheInterceptor.clear(context)
     }
 }
 

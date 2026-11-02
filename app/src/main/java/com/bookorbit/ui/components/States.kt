@@ -96,3 +96,27 @@ private fun StateMessage(
         }
     }
 }
+
+/**
+ * A quiet strip saying the server can't be reached and that what's shown is what's on the device
+ * and what was loaded last. It informs rather than alarms: the screen under it still works.
+ */
+@Composable
+fun OfflineBanner(modifier: Modifier = Modifier, message: String = stringResource(R.string.offline_banner_message)) {
+    val tokens = BookOrbitTheme.tokens
+    androidx.compose.foundation.layout.Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(tokens.muted)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Icon(Icons.Outlined.CloudOff, contentDescription = null, tint = tokens.mutedForeground, modifier = Modifier.size(20.dp))
+        Column {
+            Text(stringResource(R.string.offline_banner_title), style = MaterialTheme.typography.titleSmall)
+            Text(message, style = MaterialTheme.typography.bodySmall, color = tokens.mutedForeground)
+        }
+    }
+}

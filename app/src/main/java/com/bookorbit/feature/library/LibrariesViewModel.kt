@@ -10,7 +10,9 @@ import com.bookorbit.core.model.BookCard
 import com.bookorbit.core.model.Library
 import com.bookorbit.core.paging.BookPagingSource
 import com.bookorbit.core.paging.DEFAULT_PAGE_SIZE
+import com.bookorbit.core.network.Connectivity
 import com.bookorbit.feature.browse.BrowseRepository
+import com.bookorbit.feature.downloads.OnDeviceBooks
 import com.bookorbit.feature.library.filters.CatalogKind
 import com.bookorbit.feature.library.filters.LibraryFilters
 import com.bookorbit.feature.library.filters.LibrarySort
@@ -21,10 +23,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -32,13 +38,24 @@ import javax.inject.Inject
 class LibrariesViewModel @Inject constructor(
     private val repo: BrowseRepository,
     private val prefsStore: FilterPrefsStore,
+    onDeviceBooks: OnDeviceBooks,
+    private val connectivity: Connectivity,
 ) : ViewModel() {
+
+    /** The server can't be reached: the grid shows what it loaded last, or else the books on the device. */
+    val offline: StateFlow<Boolean> = connectivity.offline
+
+    val onDevice: StateFlow<List<BookCard>> = onDeviceBooks.books
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _libraries = MutableStateFlow<List<Library>>(emptyList())
     val libraries = _libraries.asStateFlow()
 
-    /** Where loading the library list stands, so the screen can show an error instead of spinning forever. */
-    enum class Status { LOADING, READY, EMPTY, ERROR }
+    /**
+     * Where loading the library list stands, so the screen can show an error instead of spinning
+     * forever. OFFLINE: it couldn't load and the server can't be reached, so the books on the device show.
+     */
+    enum class Status { LOADING, READY, EMPTY, ERROR, OFFLINE }
 
     private val _status = MutableStateFlow(Status.LOADING)
     val status = _status.asStateFlow()
@@ -62,6 +79,11 @@ class LibrariesViewModel @Inject constructor(
 
     init {
         loadLibraries()
+        viewModelScope.launch {
+            connectivity.offline.drop(1).collect { offline ->
+                if (!offline && _status.value in setOf(Status.ERROR, Status.OFFLINE)) loadLibraries()
+            }
+        }
     }
 
     fun loadLibraries() {
@@ -71,6 +93,7 @@ class LibrariesViewModel @Inject constructor(
             val libs = result.getOrDefault(emptyList())
             _libraries.value = libs
             _status.value = when {
+                result.isFailure && connectivity.offline.value -> Status.OFFLINE
                 result.isFailure -> Status.ERROR
                 libs.isEmpty() -> Status.EMPTY
                 else -> Status.READY

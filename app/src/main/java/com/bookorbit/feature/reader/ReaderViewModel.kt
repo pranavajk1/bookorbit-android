@@ -9,6 +9,7 @@ import com.bookorbit.core.model.BookAnnotation
 import com.bookorbit.core.model.BookBookmark
 import com.bookorbit.core.storage.LocalRef
 import com.bookorbit.feature.bookdetail.BookDetailRepository
+import com.bookorbit.feature.downloads.BookNotOnDeviceException
 import com.bookorbit.feature.downloads.DownloadsRepository
 import com.bookorbit.feature.sessions.ReadingSessionTracker
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -75,6 +76,8 @@ class ReaderViewModel @Inject constructor(
 
     data class UiState(
         val loadingFile: Boolean = true,
+        /** How far downloading the book has got, while opening it downloads it; null otherwise. */
+        val downloadProgress: Float? = null,
         val error: UiText? = null,
         val title: String? = null,
         val resolved: ResolvedOpen? = null,
@@ -149,7 +152,8 @@ class ReaderViewModel @Inject constructor(
             _ui.update { it.copy(title = book.title) }
 
             try {
-                val resolved = source.resolve(book)
+                val resolved = source.resolve(book) { p -> _ui.update { it.copy(downloadProgress = p) } }
+                _ui.update { it.copy(downloadProgress = null) }
                 val loaded = preferences.load(resolved.fileId)
                 val fontFace = fonts.fontFaceCss(loaded.settings.fontFamily)
                 // Coach the paginated tap-zones once (they're invisible by design).
@@ -171,8 +175,10 @@ class ReaderViewModel @Inject constructor(
                         resolved = ResolvedOpen(resolved.ref, resolved.format, resolved.fileId, initial),
                     )
                 }
+            } catch (e: BookNotOnDeviceException) {
+                _ui.update { it.copy(loadingFile = false, downloadProgress = null, error = UiText.of(R.string.reader_err_not_on_device)) }
             } catch (e: Exception) {
-                _ui.update { it.copy(loadingFile = false, error = e.message?.let { m -> UiText.raw(m) } ?: UiText.of(R.string.reader_err_open_book)) }
+                _ui.update { it.copy(loadingFile = false, downloadProgress = null, error = e.message?.let { m -> UiText.raw(m) } ?: UiText.of(R.string.reader_err_open_book)) }
             }
         }
     }

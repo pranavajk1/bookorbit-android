@@ -92,6 +92,9 @@ class SettingsViewModel @Inject constructor(
     val wifiOnlyDownloads: StateFlow<Boolean> = appSettings.wifiOnlyDownloads
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    val downloadOnOpen: StateFlow<Boolean> = appSettings.downloadOnOpen
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
+
     val certificateHost: String get() = UserCaSettings.httpsHost(session.serverUrl).orEmpty()
 
     val trustUserCas: StateFlow<Boolean> = userCaSettings.hosts.map { userCaSettings.isEnabledForUrl(session.serverUrl) }
@@ -140,6 +143,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setWifiOnlyDownloads(enabled: Boolean) {
         viewModelScope.launch { appSettings.setWifiOnlyDownloads(enabled) }
+    }
+
+    fun setDownloadOnOpen(enabled: Boolean) {
+        viewModelScope.launch { appSettings.setDownloadOnOpen(enabled) }
     }
 
     fun setDefaultSpeed(value: Float) {
