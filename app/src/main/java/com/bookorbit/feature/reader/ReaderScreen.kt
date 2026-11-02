@@ -320,7 +320,7 @@ fun ReaderScreen(
         )
     }
     ui.define?.let { state ->
-        DefineSheet(state = state, onRetry = vm::retryDefine, onDismiss = vm::closeDefine)
+        DefineSheet(state = state, onDownloadDictionary = vm::downloadDictionary, onRetry = vm::retryDefine, onDismiss = vm::closeDefine)
     }
     ui.translation?.let { state ->
         TranslationSheet(

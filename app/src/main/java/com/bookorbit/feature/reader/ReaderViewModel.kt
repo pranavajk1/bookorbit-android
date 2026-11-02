@@ -9,6 +9,8 @@ import com.bookorbit.core.model.BookAnnotation
 import com.bookorbit.core.model.BookBookmark
 import com.bookorbit.core.storage.LocalRef
 import com.bookorbit.feature.bookdetail.BookDetailRepository
+import com.bookorbit.feature.dictionary.Dictionaries
+import com.bookorbit.feature.dictionary.DictionaryState
 import com.bookorbit.feature.downloads.BookNotOnDeviceException
 import com.bookorbit.feature.downloads.DownloadsRepository
 import com.bookorbit.feature.sessions.ReadingSessionTracker
@@ -16,6 +18,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,6 +39,7 @@ class ReaderViewModel @Inject constructor(
     private val annotationRepo: ReaderAnnotationRepository,
     private val bookmarkRepo: ReaderBookmarkRepository,
     private val dictionary: ReaderDictionary,
+    private val dictionaries: Dictionaries,
     private val translator: ReaderTranslator,
 ) : ViewModel() {
 
@@ -57,12 +62,27 @@ class ReaderViewModel @Inject constructor(
         val annotationId: Int? = null,
     )
 
-    /** A word being looked up in the dictionary sheet; neither [result] nor [failed] once done means not found. */
+    /**
+     * A word being looked up in the dictionary sheet. Once done: [result] when found, [missing] when
+     * the book's language has no dictionary on the device yet, neither when the word isn't in it.
+     */
     data class DefineState(
         val word: String,
         val loading: Boolean = true,
         val result: DictionaryResult? = null,
-        val failed: Boolean = false,
+        val missing: MissingDictionary? = null,
+    )
+
+    /**
+     * No dictionary for [lang] on the device. [state] is its download (null while the list of
+     * dictionaries loads, or when there's none for the language); [listUnavailable] when that list
+     * couldn't be fetched (offline, say).
+     */
+    data class MissingDictionary(
+        val lang: String,
+        val state: DictionaryState? = null,
+        val listLoaded: Boolean = false,
+        val listUnavailable: Boolean = false,
     )
 
     /** A selection being translated in the translation sheet, into [target]. */
@@ -334,6 +354,12 @@ class ReaderViewModel @Inject constructor(
 
     fun retryDefine() = _ui.value.define?.let { lookUp(it.word) }
 
+    /** Downloads the missing dictionary the sheet is offering; the word is looked up once it's in. */
+    fun downloadDictionary() {
+        val lang = _ui.value.define?.missing?.lang ?: return
+        dictionaries.download(lang)
+    }
+
     fun closeDefine() {
         defineJob?.cancel()
         _ui.update { it.copy(define = null) }
@@ -343,11 +369,28 @@ class ReaderViewModel @Inject constructor(
         defineJob?.cancel()
         _ui.update { it.copy(define = DefineState(word)) }
         defineJob = viewModelScope.launch {
-            val outcome = runCatching { dictionary.lookup(word, _ui.value.language) }
-            _ui.update { s ->
-                s.copy(define = s.define?.copy(loading = false, result = outcome.getOrNull(), failed = outcome.isFailure))
+            when (val outcome = dictionary.lookup(word, _ui.value.language)) {
+                is DictionaryLookup.Found -> _ui.update { s -> s.copy(define = s.define?.copy(loading = false, result = outcome.result)) }
+                is DictionaryLookup.NotFound -> _ui.update { s -> s.copy(define = s.define?.copy(loading = false)) }
+                is DictionaryLookup.NotInstalled -> offerDictionary(word, outcome.lang)
             }
         }
+    }
+
+    /** Shows the download for [lang]'s dictionary and, once it's on the device, looks [word] up again. */
+    private suspend fun offerDictionary(word: String, lang: String) {
+        _ui.update { s -> s.copy(define = s.define?.copy(loading = false, missing = MissingDictionary(lang))) }
+        if (dictionaries.catalog.value == null) {
+            val fetched = runCatching { dictionaries.refreshCatalog() }.isSuccess
+            if (!fetched) {
+                _ui.update { s -> s.copy(define = s.define?.copy(missing = MissingDictionary(lang, listUnavailable = true))) }
+                return
+            }
+        }
+        val installed = dictionaries.state(lang)
+            .onEach { state -> _ui.update { s -> s.copy(define = s.define?.copy(missing = MissingDictionary(lang, state, listLoaded = true))) } }
+            .first { it == null || it.installed }
+        if (installed != null) lookUp(word)
     }
 
     /** Translate the selection into the last language used and show it in the translation sheet. */

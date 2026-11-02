@@ -57,6 +57,7 @@ import com.bookorbit.BuildConfig
 import com.bookorbit.core.settings.ThemeMode
 import com.bookorbit.core.settings.ReaderInterface
 import com.bookorbit.feature.player.ProgressBarMode
+import com.bookorbit.feature.dictionary.DictionariesSheet
 import com.bookorbit.feature.player.SPEED_PRESETS
 import kotlin.math.abs
 import kotlin.math.pow
@@ -84,6 +85,7 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
 
     val snackbarHostState = remember { SnackbarHostState() }
     var confirmClearDownloads by remember { mutableStateOf(false) }
+    var dictionariesOpen by remember { mutableStateOf(false) }
     val folderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) vm.setDownloadLocation(uri)
     }
@@ -94,6 +96,8 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
             vm.consumeMessage()
         }
     }
+
+    if (dictionariesOpen) DictionariesSheet(onDismiss = { dictionariesOpen = false })
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { padding ->
         LazyColumn(modifier = Modifier.fillMaxWidth().padding(padding)) {
@@ -217,6 +221,16 @@ fun SettingsScreen(vm: SettingsViewModel = hiltViewModel()) {
                     title = stringResource(R.string.settings_trust_user_cas),
                     subtitle = stringResource(R.string.settings_trust_user_cas_desc, vm.certificateHost),
                     trailing = { Switch(checked = trustUserCas, enabled = vm.certificateHost.isNotBlank(), onCheckedChange = vm::setTrustUserCas) },
+                )
+            }
+            item { HorizontalDivider() }
+
+            item { SectionHeader(stringResource(R.string.dictionaries)) }
+            item {
+                SettingsRow(
+                    title = stringResource(R.string.dictionaries),
+                    subtitle = stringResource(R.string.dictionaries_desc),
+                    trailing = { TextButton(onClick = { dictionariesOpen = true }) { Text(stringResource(R.string.dictionaries_manage)) } },
                 )
             }
             item { HorizontalDivider() }
