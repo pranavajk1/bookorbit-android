@@ -54,6 +54,12 @@ SKIP_POS = {
 # Inflection-table entries that aren't forms of the word (table headers, template names).
 SKIP_FORM_TAGS = {"table-tags", "inflection-template", "class", "romanization", "canonical", "auxiliary"}
 
+# Forms kept from one word's inflection table. Languages that build words from endings (Finnish,
+# Hungarian, Turkish, Latin) list hundreds per word, mostly with possessive or clitic suffixes;
+# the tables lead with the common forms, so the first ones cover what a reader meets.
+MAX_TABLE_FORMS = 40
+SKIP_TABLE_FORM_TAGS = {"possessive", "clitic"}
+
 
 def fold(text):
     decomposed = unicodedata.normalize("NFKD", text)
@@ -155,12 +161,16 @@ def build(src, lang, out, version):
                 entries += 1
             if not pointers:
                 # A lemma's own inflection table: only kept for forms with no entry (checked below).
+                kept = 0
                 for form in entry.get("forms") or []:
                     text = form.get("form")
                     tags = set(form.get("tags") or [])
-                    if not text or tags & SKIP_FORM_TAGS or " " in text or text.lower() == key:
+                    if not text or tags & (SKIP_FORM_TAGS | SKIP_TABLE_FORM_TAGS) or " " in text or text.lower() == key:
                         continue
                     table_forms.add((text.lower(), pos, word))
+                    kept += 1
+                    if kept >= MAX_TABLE_FORMS:
+                        break
 
     db.execute("CREATE INDEX entries_key ON entries(key)")
     db.execute("CREATE INDEX entries_fold ON entries(fold) WHERE fold IS NOT NULL")
