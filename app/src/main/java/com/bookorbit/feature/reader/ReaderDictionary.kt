@@ -1,102 +1,143 @@
 package com.bookorbit.feature.reader
 
-import com.bookorbit.BuildConfig
-import com.bookorbit.core.network.PublicClient
+import com.bookorbit.feature.dictionary.Dictionaries
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.io.IOException
-import java.net.URLEncoder
+import java.text.Normalizer
 import javax.inject.Inject
 import javax.inject.Singleton
 
 data class DictionaryDefinition(val definition: String, val example: String?)
 
-/** One part of speech's senses; [sourceWord] differs from the looked-up word when it came from a lemma. */
+/**
+ * One part of speech's senses. [sourceWord] differs from the looked-up word when the entry came
+ * from following it to another word ("walked" to "walk", "assiduously" to "assiduous").
+ */
 data class DictionaryEntry(val partOfSpeech: String, val definitions: List<DictionaryDefinition>, val sourceWord: String)
 
-enum class DictionaryProvider(val label: String) { FREE_DICTIONARY("Free Dictionary"), WIKTIONARY("Wiktionary") }
+data class DictionaryResult(val word: String, val phonetic: String?, val entries: List<DictionaryEntry>)
 
-data class DictionaryResult(
-    val word: String,
-    val phonetic: String?,
-    val audioUrl: String?,
-    val entries: List<DictionaryEntry>,
-    val provider: DictionaryProvider,
-)
+/** What looking a word up came to. */
+sealed interface DictionaryLookup {
+    data class Found(val result: DictionaryResult) : DictionaryLookup
 
-internal data class SenseBlock(val partOfSpeech: String, val definitions: List<DictionaryDefinition>)
+    /** The dictionary for [lang] is on the device but doesn't have the word. */
+    data class NotFound(val lang: String) : DictionaryLookup
 
-internal data class DictionaryPayload(val word: String, val phonetic: String?, val audioUrl: String?, val blocks: List<SenseBlock>)
+    /** There's no dictionary for [lang] on the device yet. */
+    data class NotInstalled(val lang: String) : DictionaryLookup
+}
+
+/** An entry as a dictionary file stores it: one word and part of speech. */
+internal data class StoredEntry(val word: String, val pos: String, val ipa: String?, val senses: List<DictionaryDefinition>)
+
+/** A word that's a form of [lemma], with its gloss ("plural of cat") when the dictionary gives one. */
+internal data class StoredForm(val word: String, val pos: String?, val lemma: String, val gloss: String?)
+
+internal data class StoredMatch(val entries: List<StoredEntry>, val forms: List<StoredForm>) {
+    fun isEmpty() = entries.isEmpty() && forms.isEmpty()
+}
+
+/** A downloaded dictionary, read on the device. */
+internal interface DictionarySource {
+    /** Entries and forms whose lowercased spelling is [key]. */
+    fun find(key: String): StoredMatch
+
+    /** The same, ignoring accents: [folded] is a key with its accents removed. */
+    fun findFolded(folded: String): StoredMatch
+}
 
 /**
- * Looks a word up the way the web reader does (client/src/features/reader/epub/composables/useDictionary.ts):
- * English goes to the Free Dictionary API and falls back to Wiktionary; other languages go to
- * Wiktionary's section for the book's language. A sense that only points at another word ("plural
- * of candelabra") is followed to that word so the reader gets a real definition.
+ * Looks a word up in the dictionary downloaded for the book's language, entirely on the device: no
+ * request leaves it. See [DictionarySearch] for how a word is matched and followed to the words
+ * that define it.
  */
 @Singleton
 class ReaderDictionary @Inject constructor(
-    @PublicClient private val client: OkHttpClient,
-    private val json: Json,
+    private val dictionaries: Dictionaries,
 ) {
-    /** Null when no provider knows the word; throws when they could not be reached. */
-    suspend fun lookup(word: String, bookLanguage: String?): DictionaryResult? = withContext(Dispatchers.IO) {
+    suspend fun lookup(word: String, bookLanguage: String?): DictionaryLookup = withContext(Dispatchers.IO) {
         val lang = DictionaryParsing.normalizeLang(bookLanguage)
-        val trimmed = DictionaryParsing.cleanWord(word)
-        if (trimmed.isEmpty()) return@withContext null
-
-        if (lang == "en") {
-            val payload = runCatching { freeDictionary(trimmed) }.getOrNull()
-            if (payload != null) {
-                val entries = DictionaryParsing.expandPointers(payload) { freeDictionary(it)?.blocks.orEmpty() }
-                return@withContext DictionaryResult(payload.word, payload.phonetic, payload.audioUrl, entries, DictionaryProvider.FREE_DICTIONARY)
-            }
-        }
-        val payload = wiktionary(trimmed, lang) ?: return@withContext null
-        val entries = DictionaryParsing.expandPointers(payload) { wiktionary(it, lang)?.blocks.orEmpty() }
-        DictionaryResult(payload.word, payload.phonetic, payload.audioUrl, entries, DictionaryProvider.WIKTIONARY)
+        val source = dictionaries.open(lang) ?: return@withContext DictionaryLookup.NotInstalled(lang)
+        DictionarySearch.lookup(source, word, lang)?.let { DictionaryLookup.Found(it) } ?: DictionaryLookup.NotFound(lang)
     }
-
-    private fun freeDictionary(word: String): DictionaryPayload? =
-        get("https://api.dictionaryapi.dev/api/v2/entries/en/${pathSegment(word)}")
-            ?.let { DictionaryParsing.parseFreeDictionary(json.parseToJsonElement(it), word) }
-
-    // Only English Wiktionary serves this endpoint; its response carries every language's section.
-    private fun wiktionary(word: String, lang: String): DictionaryPayload? =
-        get("https://en.wiktionary.org/api/rest_v1/page/definition/${pathSegment(word)}")
-            ?.let { DictionaryParsing.parseWiktionary(json.parseToJsonElement(it), word, lang) }
-
-    /** The body, or null on a 404 (the word isn't there); any other failure throws. */
-    private fun get(url: String): String? {
-        val request = Request.Builder()
-            .url(url.toHttpUrl())
-            // Wikimedia asks API clients to say who they are.
-            .header("User-Agent", "BookOrbit-Android/${BuildConfig.VERSION_NAME} (https://github.com/deranjer/bookorbit-android)")
-            .build()
-        client.newCall(request).execute().use { res ->
-            if (res.code == 404) return null
-            if (!res.isSuccessful) throw IOException("HTTP ${res.code}")
-            return res.body.string()
-        }
-    }
-
-    private fun pathSegment(word: String) = URLEncoder.encode(word, "UTF-8").replace("+", "%20")
 }
 
-internal object DictionaryParsing {
-    private const val MAX_DEFINITIONS_PER_ENTRY = 5
+/**
+ * Finds the selected word and, when its entry only points at another word, that word too, so the
+ * reader always gets a real definition:
+ *  - an inflected form leads to its lemma ("walked": "simple past of walk", then walk's senses);
+ *  - a derived word whose definition is just its base ("assiduously": "In an assiduous manner")
+ *    leads to the base word's definitions;
+ *  - a word the dictionary doesn't have under its exact spelling is tried in lower case, without a
+ *    possessive, without accents and, in English, with common endings taken off.
+ */
+internal object DictionarySearch {
+    private const val MAX_DEFINITIONS_PER_ENTRY = 6
     private const val MAX_LEMMA_DEPTH = 2
-    private const val MAX_LEMMA_LOOKUPS = 3
+    private const val MAX_LEMMA_LOOKUPS = 4
 
+    fun lookup(source: DictionarySource, raw: String, lang: String): DictionaryResult? {
+        val cleaned = DictionaryParsing.cleanWord(raw)
+        if (cleaned.isEmpty()) return null
+        for (candidate in DictionaryParsing.candidates(cleaned, lang)) {
+            val match = source.find(candidate).takeUnless { it.isEmpty() }
+                ?: source.findFolded(DictionaryParsing.fold(candidate)).takeUnless { it.isEmpty() }
+                ?: continue
+            return expand(source, candidate, match, lang)
+        }
+        return null
+    }
+
+    private fun expand(source: DictionarySource, key: String, root: StoredMatch, lang: String): DictionaryResult? {
+        val entries = mutableListOf<DictionaryEntry>()
+        val word = root.entries.firstOrNull()?.word ?: root.forms.firstOrNull()?.word ?: key
+        var phonetic = root.entries.firstNotNullOfOrNull { it.ipa }
+        val visited = mutableSetOf(key.lowercase())
+        val queue = ArrayDeque(listOf(Triple(word, root, 0)))
+        var lookups = 0
+        while (queue.isNotEmpty()) {
+            val (shown, match, depth) = queue.removeFirst()
+            val blocks = blocksOf(match)
+            blocks.forEach { entries += DictionaryEntry(it.partOfSpeech, it.definitions.take(MAX_DEFINITIONS_PER_ENTRY), shown) }
+            if (depth >= MAX_LEMMA_DEPTH) continue
+            for (lemma in pointersOf(match, blocks, lang)) {
+                if (lookups >= MAX_LEMMA_LOOKUPS) break
+                if (!visited.add(lemma.lowercase())) continue
+                lookups++
+                val found = source.find(lemma.lowercase()).takeUnless { it.isEmpty() } ?: continue
+                if (phonetic == null) phonetic = found.entries.firstNotNullOfOrNull { it.ipa }
+                queue.addLast(Triple(found.entries.firstOrNull()?.word ?: lemma, found, depth + 1))
+            }
+        }
+        if (entries.isEmpty()) return null
+        return DictionaryResult(word, phonetic, entries)
+    }
+
+    /** A match as sense blocks: real definitions first, then what it's a form of. */
+    private fun blocksOf(match: StoredMatch): List<SenseBlock> {
+        val defined = match.entries.map { SenseBlock(it.pos, it.senses) }
+        val forms = match.forms.mapNotNull { form ->
+            form.gloss?.let { SenseBlock(form.pos.orEmpty(), listOf(DictionaryDefinition(it, null))) }
+        }
+        return DictionaryParsing.mergeBlocks(defined + forms)
+    }
+
+    /** The words this match leads to: its lemmas, then the bases its leading definitions name. */
+    private fun pointersOf(match: StoredMatch, blocks: List<SenseBlock>, lang: String): List<String> {
+        val lemmas = match.forms.map { it.lemma }
+        val bases = blocks.mapNotNull { block ->
+            block.definitions.firstOrNull()?.definition?.let {
+                DictionaryParsing.pointerLemma(it) ?: DictionaryParsing.derivationBase(it, lang)
+            }
+        }
+        return (lemmas + bases).distinct()
+    }
+}
+
+internal data class SenseBlock(val partOfSpeech: String, val definitions: List<DictionaryDefinition>)
+
+internal object DictionaryParsing {
     private val LANGUAGE_ALIASES: Map<String, String> = buildMap {
         fun alias(code: String, vararg names: String) = names.forEach { put(it, code) }
         alias("ar", "ar", "ara", "arabic")
@@ -115,8 +156,9 @@ internal object DictionaryParsing {
         alias("it", "it", "ita", "italian")
         alias("ja", "ja", "jpn", "japanese")
         alias("ko", "ko", "kor", "korean")
+        alias("la", "la", "lat", "latin")
         alias("nl", "nl", "nld", "dut", "dutch")
-        alias("no", "no", "nor", "norwegian")
+        alias("no", "no", "nor", "nb", "nob", "norwegian")
         alias("pl", "pl", "pol", "polish")
         alias("pt", "pt", "por", "portuguese")
         alias("ro", "ro", "ron", "rum", "romanian")
@@ -132,9 +174,9 @@ internal object DictionaryParsing {
     /**
      * Words allowed before "of" in an inflection gloss such as "simple past and past participle of
      * walk". Requiring every leading word to be grammatical keeps ordinary definitions ("Informal form
-     * of address used by...") from being mistaken for pointers. Beyond the web's list, the regional
-     * spelling words are here too, so "UK standard spelling of endeavored" (common in older English
-     * books) leads to the word's definition.
+     * of address used by...") from being mistaken for pointers. The regional spelling words are here
+     * too, so "UK standard spelling of endeavored" (common in older English books) leads to the word's
+     * definition.
      */
     private val GRAMMAR_TERMS = setOf(
         "a", "an", "the", "and", "or", "ablative", "abbreviation", "accusative", "acronym", "active",
@@ -156,18 +198,65 @@ internal object DictionaryParsing {
     private val POINTER_PATTERN =
         Regex("""^(?:\([^)]*\)\s*)?([\p{L}\p{M}/ -]+?)\s+of\s+([\p{L}\p{M}][\p{L}\p{M}'’-]*)\s*[.:;,]?$""")
 
+    private const val WORD = """([\p{L}\p{M}][\p{L}\p{M}'’-]*)"""
+
+    /**
+     * English definitions that only restate a word through its base: "In an assiduous manner",
+     * "The quality of being brave", "Not happy", "Somewhat red", "Of or relating to history". The
+     * whole first clause has to be the pattern, so a real definition that merely starts the same
+     * way ("Not having been...") isn't taken for one.
+     */
+    private val DERIVATION_PATTERNS = listOf(
+        Regex("""^in an? $WORD (?:manner|way|fashion)$"""),
+        Regex("""^(?:the )?(?:state|quality|condition|fact|property|characteristic|habit|degree) of being (?:an? )?$WORD$"""),
+        Regex("""^(?:the )?(?:act|action|process|practice) of $WORD$"""),
+        Regex("""^not $WORD$"""),
+        Regex("""^(?:somewhat|rather|slightly|very) $WORD$"""),
+        Regex("""^(?:of|relating to|pertaining to|of or relating to|of or pertaining to|characteristic of|resembling) (?:an? |the )?$WORD$"""),
+        Regex("""^(?:full of|having|characterized by|characterised by|lacking|without) (?:an? |the )?$WORD$"""),
+    )
+
+    /** English endings a reader's word may carry that its dictionary entry doesn't, longest first. */
+    private val ENGLISH_ENDINGS = listOf(
+        "ically" to "ic", "ily" to "y", "ies" to "y", "ied" to "y", "ier" to "y", "iest" to "y",
+        "ly" to "", "ness" to "", "ments" to "ment", "ing" to "", "ing" to "e", "ed" to "", "ed" to "e",
+        "est" to "", "er" to "", "es" to "", "s" to "",
+    )
+
     /** A selection's word without the punctuation a long-press often takes with it. */
     fun cleanWord(word: String): String = word.trim().trim { !it.isLetterOrDigit() && it != '\'' && it != '’' && it != '-' }.trim('\'', '’', '-')
 
-    /** The book's language as a dictionary section code; English when unknown. */
+    /** The book's language as a dictionary code; English when unknown. */
     fun normalizeLang(lang: String?): String {
         val normalized = lang?.trim()?.lowercase().orEmpty()
         if (normalized.isEmpty()) return "en"
         val primary = normalized.split(Regex("[;,/|]")).first().trim()
         if (primary.isEmpty()) return "en"
-        val base = primary.split('-').first().trim()
+        val base = primary.split('-', '_').first().trim()
         LANGUAGE_ALIASES[base]?.let { return it }
         return if (Regex("^[a-z]{2,3}$").matches(base)) base else "en"
+    }
+
+    /** [text] without accents, as the dictionary's fold columns store it. */
+    fun fold(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFKD).replace(Regex("\\p{M}+"), "")
+
+    /** Spellings to try, in order: as selected (lowercased), without a possessive, then English stems. */
+    fun candidates(word: String, lang: String): List<String> {
+        val lower = word.lowercase()
+        val out = linkedSetOf(lower)
+        val bare = lower.removeSuffix("'s").removeSuffix("’s").trimEnd('\'', '’')
+        out += bare
+        if (lang == "en") {
+            for ((ending, replacement) in ENGLISH_ENDINGS) {
+                if (bare.length > ending.length + 2 && bare.endsWith(ending)) {
+                    val stem = bare.dropLast(ending.length) + replacement
+                    out += stem
+                    // "stopped" -> "stopp" -> "stop"
+                    if (replacement.isEmpty() && stem.length > 2 && stem.last() == stem[stem.length - 2]) out += stem.dropLast(1)
+                }
+            }
+        }
+        return out.filter { it.isNotEmpty() }
     }
 
     /**
@@ -183,28 +272,20 @@ internal object DictionaryParsing {
         return match.groupValues[2].lowercase()
     }
 
-    /** Text of an HTML fragment. Script and style contents go too: Wiktionary ships inline <style> with some senses. */
-    fun stripHtml(html: String): String = html
-        .replace(Regex("<(script|style)\\b[^>]*>.*?</\\1\\s*>", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)), "")
-        .replace(Regex("<[^>]*>"), "")
-        .let(::decodeEntities)
-        .replace(Regex("\\s+"), " ")
-        .trim()
-
-    private val NAMED_ENTITIES = mapOf("amp" to "&", "lt" to "<", "gt" to ">", "quot" to "\"", "apos" to "'", "nbsp" to " ")
-
-    private fun decodeEntities(text: String): String = Regex("&(#x[0-9a-fA-F]+|#[0-9]+|[a-zA-Z]+);").replace(text) { m ->
-        val body = m.groupValues[1]
-        when {
-            body.startsWith("#x") -> body.drop(2).toIntOrNull(16)?.let { String(Character.toChars(it)) }
-            body.startsWith("#") -> body.drop(1).toIntOrNull()?.let { String(Character.toChars(it)) }
-            else -> NAMED_ENTITIES[body]
-        } ?: m.value
+    /** The base word an English definition only restates ("In an assiduous manner" -> "assiduous"). */
+    fun derivationBase(definition: String, lang: String): String? {
+        if (lang != "en") return null
+        val head = definition.trim()
+            .replace(Regex("""^(?:\([^)]*\)\s*)+"""), "")
+            .split(';', ',', ':').first()
+            .trim().trimEnd('.').trim()
+            .lowercase()
+        return DERIVATION_PATTERNS.firstNotNullOfOrNull { it.matchEntire(head)?.groupValues?.get(1) }
     }
 
     /**
-     * Collapses blocks that share a part of speech. Both providers split a word across several
-     * same-part-of-speech blocks (one per etymology), which would otherwise repeat "NOUN" headings.
+     * Collapses blocks that share a part of speech: a dictionary splits a word across several
+     * same-part-of-speech entries (one per etymology), which would otherwise repeat "NOUN" headings.
      */
     fun mergeBlocks(blocks: List<SenseBlock>): List<SenseBlock> {
         val merged = LinkedHashMap<String, MutableList<DictionaryDefinition>>()
@@ -214,92 +295,4 @@ internal object DictionaryParsing {
         }
         return merged.map { (pos, defs) -> SenseBlock(pos, defs) }
     }
-
-    fun parseFreeDictionary(data: JsonElement, fallbackWord: String): DictionaryPayload? {
-        val entry = (data as? JsonArray)?.firstOrNull() as? JsonObject ?: return null
-        var phonetic = entry.str("phonetic")
-        var audioUrl: String? = null
-        for (p in entry.arr("phonetics")) {
-            val o = p as? JsonObject ?: continue
-            val audio = o.str("audio")?.takeIf { it.isNotEmpty() }
-            val text = o.str("text")?.takeIf { it.isNotEmpty() }
-            if (audio != null) {
-                audioUrl = audio
-                if (text != null) phonetic = text
-                break
-            }
-            if (phonetic == null && text != null) phonetic = text
-        }
-        val blocks = mergeBlocks(
-            entry.arr("meanings").mapNotNull { m ->
-                val o = m as? JsonObject ?: return@mapNotNull null
-                SenseBlock(
-                    partOfSpeech = o.str("partOfSpeech").orEmpty(),
-                    definitions = o.arr("definitions").mapNotNull { d ->
-                        val def = d as? JsonObject ?: return@mapNotNull null
-                        DictionaryDefinition(def.str("definition").orEmpty(), def.str("example"))
-                    },
-                )
-            },
-        )
-        if (blocks.isEmpty()) return null
-        return DictionaryPayload(entry.str("word") ?: fallbackWord, phonetic, audioUrl, blocks)
-    }
-
-    /**
-     * Wiktionary keys its response by language and one page carries every language that spells the
-     * word the same way, so only the book's language section is read.
-     */
-    fun parseWiktionary(data: JsonElement, word: String, lang: String): DictionaryPayload? {
-        val section = (data as? JsonObject)?.get(lang) as? JsonArray ?: return null
-        val blocks = section.mapNotNull { e ->
-            val o = e as? JsonObject ?: return@mapNotNull null
-            val definitions = o.arr("definitions").mapNotNull { d ->
-                val def = d as? JsonObject ?: return@mapNotNull null
-                val text = def.str("definition")?.let(::stripHtml)?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
-                val example = def.arr("examples").firstNotNullOfOrNull { ex ->
-                    when (ex) {
-                        is JsonPrimitive -> ex.contentOrNull
-                        is JsonObject -> ex.str("text")
-                        else -> null
-                    }
-                }?.let(::stripHtml)
-                DictionaryDefinition(text, example)
-            }
-            if (definitions.isEmpty()) null else SenseBlock(o.str("partOfSpeech").orEmpty(), definitions)
-        }
-        val merged = mergeBlocks(blocks)
-        if (merged.isEmpty()) return null
-        return DictionaryPayload(word, null, null, merged)
-    }
-
-    /**
-     * Walks inflection pointers breadth-first so a lookup that lands on a pure inflection
-     * ("candelabras" -> "candelabra" -> "candelabrum") still reaches a real definition. Only a pointer
-     * in the leading sense of its block is followed.
-     */
-    suspend fun expandPointers(root: DictionaryPayload, fetchBlocks: suspend (String) -> List<SenseBlock>): List<DictionaryEntry> {
-        val entries = mutableListOf<DictionaryEntry>()
-        val visited = mutableSetOf(root.word.lowercase())
-        val queue = ArrayDeque(listOf(Triple(root.word, root.blocks, 0)))
-        var lookups = 0
-        while (queue.isNotEmpty()) {
-            val (word, blocks, depth) = queue.removeFirst()
-            blocks.forEach { entries += DictionaryEntry(it.partOfSpeech, it.definitions.take(MAX_DEFINITIONS_PER_ENTRY), word) }
-            if (depth >= MAX_LEMMA_DEPTH) continue
-            for (block in blocks) {
-                if (lookups >= MAX_LEMMA_LOOKUPS) break
-                val lemma = block.definitions.firstOrNull()?.let { pointerLemma(it.definition) } ?: continue
-                if (!visited.add(lemma)) continue
-                lookups++
-                // A lemma that fails to resolve must never take the primary result down.
-                val found = runCatching { mergeBlocks(fetchBlocks(lemma)) }.getOrDefault(emptyList())
-                if (found.isNotEmpty()) queue.addLast(Triple(lemma, found, depth + 1))
-            }
-        }
-        return entries
-    }
-
-    private fun JsonObject.str(key: String): String? = (this[key] as? JsonPrimitive)?.takeIf { it.isString }?.contentOrNull
-    private fun JsonObject.arr(key: String): List<JsonElement> = (this[key] as? JsonArray).orEmpty()
 }

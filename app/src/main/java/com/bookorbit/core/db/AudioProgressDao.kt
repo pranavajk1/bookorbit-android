@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AudioProgressDao {
@@ -12,6 +13,9 @@ interface AudioProgressDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: AudioProgressEntity)
+
+    @Query("SELECT * FROM audio_progress")
+    fun observeAll(): Flow<List<AudioProgressEntity>>
 
     @Query("SELECT * FROM audio_progress WHERE dirty = 1")
     suspend fun dirtyEntries(): List<AudioProgressEntity>

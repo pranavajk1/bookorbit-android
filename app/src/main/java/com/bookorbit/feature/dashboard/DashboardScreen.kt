@@ -24,6 +24,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.outlined.DownloadDone
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Headphones
 import androidx.compose.material.icons.outlined.LocalFireDepartment
@@ -50,6 +51,7 @@ import com.bookorbit.R
 import com.bookorbit.core.model.BookCard
 import com.bookorbit.core.model.ReadingGoalWidget
 import com.bookorbit.core.model.ReadingStreakWidget
+import com.bookorbit.ui.LocalBookAvailability
 import com.bookorbit.ui.LocalImageUrls
 import com.bookorbit.ui.components.BookCover
 import com.bookorbit.ui.components.BookShelf
@@ -57,6 +59,7 @@ import com.bookorbit.ui.components.CoverBackdrop
 import com.bookorbit.ui.components.EmptyState
 import com.bookorbit.ui.components.ErrorState
 import com.bookorbit.ui.components.IconTile
+import com.bookorbit.ui.components.OfflineBanner
 import com.bookorbit.ui.components.Panel
 import com.bookorbit.ui.components.PanelShape
 import com.bookorbit.ui.components.PrimaryButton
@@ -92,7 +95,8 @@ internal fun DashboardContent(
     onOpenProfile: () -> Unit,
     onBookClick: (Int) -> Unit,
 ) {
-    val isEmpty = !ui.loading && ui.continueReading.isEmpty() && ui.continueListening.isEmpty() && ui.recentlyAdded.isEmpty()
+    val isEmpty = !ui.loading && ui.continueReading.isEmpty() && ui.continueListening.isEmpty() && ui.recentlyAdded.isEmpty() &&
+        (!ui.offline || ui.onDevice.isEmpty())
 
     RefreshBox(isRefreshing = ui.loading, onRefresh = onRefresh, modifier = Modifier.fillMaxSize()) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -108,23 +112,39 @@ internal fun DashboardContent(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     HomeHeader(greeting = greeting, userName = userName, onOpenProfile = onOpenProfile)
+                    if (ui.offline) OfflineBanner()
 
                     when {
                         ui.error -> Box(Modifier.fillMaxWidth(), Alignment.Center) {
                             ErrorState(stringResource(R.string.couldn_t_load_your_dashboard), onRetry = onRefresh)
+                        }
+                        isEmpty && ui.offline -> Box(Modifier.fillMaxWidth().padding(vertical = 32.dp), Alignment.Center) {
+                            EmptyState(
+                                Icons.Outlined.DownloadDone,
+                                stringResource(R.string.home_offline_empty_title),
+                                message = stringResource(R.string.home_offline_empty_message),
+                            )
                         }
                         isEmpty -> Box(Modifier.fillMaxWidth().padding(vertical = 32.dp), Alignment.Center) {
                             EmptyState(Icons.Outlined.AutoStories, stringResource(R.string.nothing_here_yet_add_books))
                         }
                         else -> {
                             // The hero is the book to pick up next: reading first, then listening.
-                            val heroFromReading = ui.continueReading.firstOrNull()
-                            val hero = heroFromReading ?: ui.continueListening.firstOrNull()
+                            // Offline it's the downloaded book read last, which is sure to open.
+                            val heroFromDevice = if (ui.offline) ui.onDevice.firstOrNull() else null
+                            val heroFromReading = if (heroFromDevice == null) ui.continueReading.firstOrNull() else null
+                            val hero = heroFromDevice ?: heroFromReading ?: ui.continueListening.firstOrNull()
                             val heroCard: (@Composable (Modifier) -> Unit)? = hero?.let { book ->
                                 { modifier ->
                                     ContinueCard(
                                         book = book,
-                                        label = stringResource(if (heroFromReading != null) R.string.home_continue_reading else R.string.continue_listening),
+                                        label = stringResource(
+                                            when {
+                                                heroFromDevice != null -> R.string.on_this_device
+                                                heroFromReading != null -> R.string.home_continue_reading
+                                                else -> R.string.continue_listening
+                                            },
+                                        ),
                                         onClick = { onBookClick(book.id) },
                                         modifier = modifier,
                                     )
@@ -144,8 +164,13 @@ internal fun DashboardContent(
                                 StatsStrip(streak = ui.streak, goal = ui.goal)
                             }
 
-                            val moreReading = if (heroFromReading != null) ui.continueReading.drop(1) else ui.continueReading
-                            val moreListening = if (heroFromReading != null) ui.continueListening else ui.continueListening.drop(1)
+                            val moreOnDevice = if (heroFromDevice != null) ui.onDevice.drop(1) else emptyList()
+                            val moreReading = when {
+                                heroFromReading != null -> ui.continueReading.drop(1)
+                                else -> ui.continueReading
+                            }
+                            val moreListening = if (heroFromDevice == null && heroFromReading == null) ui.continueListening.drop(1) else ui.continueListening
+                            if (moreOnDevice.isNotEmpty()) BookShelf(stringResource(R.string.on_this_device), Icons.Outlined.DownloadDone, moreOnDevice, onBookClick)
                             if (moreReading.isNotEmpty()) BookShelf(stringResource(R.string.up_next_to_read), Icons.AutoMirrored.Outlined.MenuBook, moreReading, onBookClick)
                             if (moreListening.isNotEmpty()) BookShelf(stringResource(R.string.continue_listening), Icons.Outlined.Headphones, moreListening, onBookClick)
                             if (ui.recentlyAdded.isNotEmpty()) BookShelf(stringResource(R.string.recently_added), Icons.Outlined.NewReleases, ui.recentlyAdded, onBookClick)
@@ -291,7 +316,7 @@ internal fun ProgressLine(fraction: Float, modifier: Modifier = Modifier) {
 private fun ContinueCard(book: BookCard, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val imageUrls = LocalImageUrls.current
     val tokens = BookOrbitTheme.tokens
-    val coverModel = if (book.hasCover) imageUrls.cover(book.id) else null
+    val coverModel = LocalBookAvailability.current.localCover(book.id) ?: if (book.hasCover) imageUrls.cover(book.id) else null
     val progress = (book.readingProgress ?: 0.0).coerceIn(0.0, 100.0)
     Box(
         modifier

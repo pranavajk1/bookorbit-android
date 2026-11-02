@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.FormatQuote
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.TouchApp
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -278,7 +277,7 @@ fun ReaderScreen(
 
         if ((!ui.loaded || !ready) && ui.error == null && !rendererFailed) {
             Box(modifier = Modifier.fillMaxSize().background(surface), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                ReaderLoading(ui.downloadProgress, tint = onSurface)
             }
         }
 
@@ -321,7 +320,7 @@ fun ReaderScreen(
         )
     }
     ui.define?.let { state ->
-        DefineSheet(state = state, onRetry = vm::retryDefine, onDismiss = vm::closeDefine)
+        DefineSheet(state = state, onDownloadDictionary = vm::downloadDictionary, onRetry = vm::retryDefine, onDismiss = vm::closeDefine)
     }
     ui.translation?.let { state ->
         TranslationSheet(

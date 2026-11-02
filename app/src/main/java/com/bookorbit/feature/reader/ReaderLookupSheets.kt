@@ -1,7 +1,5 @@
 package com.bookorbit.feature.reader
 
-import android.media.AudioAttributes
-import android.media.MediaPlayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Headphones
@@ -33,8 +30,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,14 +38,23 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.ui.platform.LocalContext
+import java.util.Locale
 import com.bookorbit.R
 import com.bookorbit.ui.asString
 
-/** The selected word's definitions, grouped by the word they came from when a lemma was followed. */
+/**
+ * The selected word's definitions from the dictionary on the device, grouped by the word they came
+ * from when the lookup followed it to another ("assiduously" to "assiduous"). Without a dictionary
+ * for the book's language, it offers to download one.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DefineSheet(
     state: ReaderViewModel.DefineState,
+    onDownloadDictionary: () -> Unit,
     onRetry: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -79,13 +83,12 @@ fun DefineSheet(
                         modifier = Modifier.padding(start = 10.dp),
                     )
                 }
-                Spacer(Modifier.weight(1f))
-                result?.audioUrl?.let { url -> PronunciationButton(url) }
             }
             Spacer(Modifier.size(12.dp))
+            val missing = state.missing
             when {
                 state.loading -> CircularProgressIndicator(modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
-                state.failed -> LookupError(stringResource(R.string.dictionary_load_error), onRetry)
+                missing != null -> MissingDictionaryOffer(missing, onDownloadDictionary, onRetry)
                 result == null -> Text(
                     stringResource(R.string.dictionary_no_definition),
                     style = MaterialTheme.typography.bodyMedium,
@@ -101,7 +104,7 @@ fun DefineSheet(
                         entries.forEach { entry -> DictionarySenses(entry) }
                     }
                     Text(
-                        stringResource(R.string.dictionary_source, result.provider.label),
+                        stringResource(R.string.dictionary_credit),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 12.dp),
@@ -112,11 +115,50 @@ fun DefineSheet(
     }
 }
 
+/** No dictionary for the book's language yet: what it is, its size, and a button to get it. */
+@Composable
+private fun MissingDictionaryOffer(missing: ReaderViewModel.MissingDictionary, onDownload: () -> Unit, onRetry: () -> Unit) {
+    val language = languageName(missing.lang)
+    val dictionary = missing.state
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        when {
+            missing.listUnavailable -> {
+                Text(stringResource(R.string.dictionary_offline_needed, language), style = MaterialTheme.typography.bodyMedium, color = muted)
+                TextButton(onClick = onRetry) { Text(stringResource(R.string.retry)) }
+            }
+            !missing.listLoaded -> CircularProgressIndicator(modifier = Modifier.size(24.dp).align(Alignment.CenterHorizontally))
+            dictionary == null -> Text(stringResource(R.string.dictionary_unavailable_for, language), style = MaterialTheme.typography.bodyMedium, color = muted)
+            dictionary.progress != null -> {
+                Text(stringResource(R.string.dictionary_downloading, language), style = MaterialTheme.typography.bodyMedium)
+                LinearProgressIndicator(progress = { dictionary.progress }, modifier = Modifier.fillMaxWidth())
+            }
+            else -> {
+                Text(stringResource(R.string.dictionary_download_offer, language), style = MaterialTheme.typography.bodyMedium)
+                if (dictionary.failed) {
+                    Text(stringResource(R.string.dictionary_download_failed), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                }
+                Button(onClick = onDownload) {
+                    Text(stringResource(R.string.dictionary_download_button, formatSize(dictionary.pack.gzipBytes)))
+                }
+            }
+        }
+    }
+}
+
+/** A language code as the reader's own language names it ("fr" -> "French"). */
+internal fun languageName(lang: String): String =
+    Locale.forLanguageTag(lang).getDisplayLanguage(Locale.getDefault()).ifBlank { lang }
+        .replaceFirstChar { it.titlecase(Locale.getDefault()) }
+
+@Composable
+private fun formatSize(bytes: Long): String = android.text.format.Formatter.formatShortFileSize(LocalContext.current, bytes)
+
 @Composable
 private fun DictionarySenses(entry: DictionaryEntry) {
     if (entry.partOfSpeech.isNotBlank()) {
         Text(
-            entry.partOfSpeech.uppercase(),
+            partOfSpeechLabel(entry.partOfSpeech).uppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
@@ -145,24 +187,24 @@ private fun DictionarySenses(entry: DictionaryEntry) {
     }
 }
 
-/** Plays the dictionary's recording of the word; the player lives only as long as the sheet. */
+/** The dictionary's short part-of-speech codes ("adj", "adv") as words. */
 @Composable
-private fun PronunciationButton(url: String) {
-    val player = remember(url) { arrayOfNulls<MediaPlayer>(1) }
-    DisposableEffect(url) { onDispose { player[0]?.release() } }
-    IconButton(onClick = {
-        player[0]?.release()
-        player[0] = runCatching {
-            MediaPlayer().apply {
-                setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
-                setDataSource(url)
-                setOnPreparedListener { it.start() }
-                prepareAsync()
-            }
-        }.getOrNull()
-    }) {
-        Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = stringResource(R.string.play_pronunciation))
-    }
+private fun partOfSpeechLabel(code: String): String = when (code) {
+    "noun" -> stringResource(R.string.pos_noun)
+    "verb" -> stringResource(R.string.pos_verb)
+    "adj" -> stringResource(R.string.pos_adjective)
+    "adv" -> stringResource(R.string.pos_adverb)
+    "pron" -> stringResource(R.string.pos_pronoun)
+    "prep" -> stringResource(R.string.pos_preposition)
+    "conj" -> stringResource(R.string.pos_conjunction)
+    "intj" -> stringResource(R.string.pos_interjection)
+    "det" -> stringResource(R.string.pos_determiner)
+    "article" -> stringResource(R.string.pos_article)
+    "num" -> stringResource(R.string.pos_numeral)
+    "particle" -> stringResource(R.string.pos_particle)
+    "contraction" -> stringResource(R.string.pos_contraction)
+    "abbrev" -> stringResource(R.string.pos_abbreviation)
+    else -> code.replace('_', ' ')
 }
 
 /** The selection translated into the chosen language, with the language picker and a copy button. */

@@ -3,6 +3,7 @@ package com.bookorbit.feature.reader.pdf
 import com.bookorbit.ui.asString
 import androidx.compose.ui.res.stringResource
 import com.bookorbit.R
+import com.bookorbit.feature.reader.ReaderLoading
 import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -34,7 +35,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -117,7 +117,7 @@ fun PdfReaderScreen(
         }
 
         if (ui.loading && ui.error == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { ReaderLoading(ui.downloadProgress, tint = Color.White) }
         }
         ui.error?.let { message ->
             Box(Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {

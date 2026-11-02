@@ -79,4 +79,16 @@ class BookFilesTest {
         val files = listOf(file(1, "jpg", role = "primary"))
         assertNull(BookFiles.badgeFormat(files))
     }
+
+    @Test
+    fun `a download carries the file the reader opens as well as the primary`() {
+        val azwWithEpub = book(file(1, "azw", role = "primary"), file(2, "epub"))
+        assertEquals(listOf(1, 2), BookFiles.downloadableFiles(azwWithEpub).map { it.id })
+
+        val epub = book(file(1, "epub", role = "primary"), file(2, "pdf"))
+        assertEquals(listOf(1), BookFiles.downloadableFiles(epub).map { it.id })
+
+        val audio = book(file(1, "m4b", role = "primary"), file(2, "mp3"))
+        assertEquals(listOf(1, 2), BookFiles.downloadableFiles(audio).map { it.id })
+    }
 }

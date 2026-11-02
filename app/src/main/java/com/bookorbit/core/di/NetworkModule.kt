@@ -10,6 +10,7 @@ import com.bookorbit.core.network.AuthInterceptor
 import com.bookorbit.core.network.BaseUrlInterceptor
 import com.bookorbit.core.network.ImageClient
 import com.bookorbit.core.network.MainClient
+import com.bookorbit.core.network.OfflineCacheInterceptor
 import com.bookorbit.core.network.PersistentCookieJar
 import com.bookorbit.core.network.PublicClient
 import com.bookorbit.core.network.RefreshClient
@@ -73,6 +74,7 @@ object NetworkModule {
     fun provideMainClient(
         cookieJar: PersistentCookieJar,
         baseUrlInterceptor: BaseUrlInterceptor,
+        offlineCache: OfflineCacheInterceptor,
         authInterceptor: AuthInterceptor,
         authenticator: TokenAuthenticator,
         logging: HttpLoggingInterceptor,
@@ -80,6 +82,8 @@ object NetworkModule {
     ): OkHttpClient = userCaTrust.applyTo(OkHttpClient.Builder())
         .cookieJar(cookieJar)
         .addInterceptor(baseUrlInterceptor)
+        // After the base URL so answers are kept per server; before auth so a new token doesn't matter.
+        .addInterceptor(offlineCache)
         .addInterceptor(authInterceptor)
         .addInterceptor(logging)
         .authenticator(authenticator)

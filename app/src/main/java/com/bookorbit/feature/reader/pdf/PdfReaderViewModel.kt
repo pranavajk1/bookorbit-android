@@ -8,6 +8,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bookorbit.feature.bookdetail.BookDetailRepository
+import com.bookorbit.feature.downloads.BookNotOnDeviceException
 import com.bookorbit.feature.downloads.DownloadsRepository
 import com.bookorbit.feature.reader.ProgressSaver
 import com.bookorbit.feature.reader.ReaderProgressRepository
@@ -54,6 +55,8 @@ class PdfReaderViewModel @Inject constructor(
 
     data class UiState(
         val loading: Boolean = true,
+        /** How far downloading the book has got, while opening it downloads it; null otherwise. */
+        val downloadProgress: Float? = null,
         val error: UiText? = null,
         val title: String? = null,
         val core: PdfRenderCore? = null,
@@ -90,7 +93,8 @@ class PdfReaderViewModel @Inject constructor(
             _ui.update { it.copy(title = book.title) }
 
             try {
-                val resolved = source.resolvePdf(book)
+                val resolved = source.resolvePdf(book) { p -> _ui.update { it.copy(downloadProgress = p) } }
+                _ui.update { it.copy(downloadProgress = null) }
                 fileId = resolved.fileId
                 val core = PdfRenderCore.open(context, resolved.ref)
                 val initial = progress.resolveInitial(resolved.fileId)
@@ -105,8 +109,10 @@ class PdfReaderViewModel @Inject constructor(
                         currentPage = page,
                     )
                 }
+            } catch (e: BookNotOnDeviceException) {
+                _ui.update { it.copy(loading = false, downloadProgress = null, error = UiText.of(R.string.reader_err_not_on_device)) }
             } catch (e: Exception) {
-                _ui.update { it.copy(loading = false, error = e.message?.let { m -> UiText.raw(m) } ?: UiText.of(R.string.pdf_err_open)) }
+                _ui.update { it.copy(loading = false, downloadProgress = null, error = e.message?.let { m -> UiText.raw(m) } ?: UiText.of(R.string.pdf_err_open)) }
             }
         }
     }
