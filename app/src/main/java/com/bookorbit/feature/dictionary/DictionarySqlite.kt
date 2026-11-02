@@ -46,7 +46,16 @@ internal class DictionarySqlite private constructor(
                 }
             }
         }
-        return StoredMatch(entries, forms)
+        // Inflection-table forms are stored by exact spelling only, so a folded lookup matches them as typed.
+        val inflections = db.rawQuery(
+            "SELECT i.key, w.word FROM inflections i JOIN lemmas w ON w.id = i.lemma WHERE i.key = ?",
+            arrayOf(value),
+        ).use { c ->
+            buildList {
+                while (c.moveToNext()) add(StoredForm(c.getString(0), null, c.getString(1), null))
+            }
+        }
+        return StoredMatch(entries, forms + inflections)
     }
 
     fun close() = db.close()

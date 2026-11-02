@@ -21,8 +21,10 @@ Tables:
         that differs (capitals); `fold` the key without accents when that differs. `senses` is a JSON
         list of {"g": gloss, "x": example}.
     forms(key, fold, pos, lemma, label)
-        Words that are only a form of another ("walked": "simple past and past participle of walk"),
-        and the forms in a lemma's inflection table that have no entry of their own (label null).
+        Words that are only a form of another ("walked": "simple past and past participle of walk").
+    inflections(key, lemma) and lemmas(id, word)
+        The forms in a lemma's inflection table that have no entry of their own, compactly: one row
+        per spelling and lemma, keyed by the spelling, with the lemma by number.
     labels(id, text)
         The glosses of forms, each stored once with the lemma as "{}": "simple past and past
         participle of {}" is shared by thousands of verbs.
@@ -56,8 +58,9 @@ SKIP_FORM_TAGS = {"table-tags", "inflection-template", "class", "romanization", 
 
 # Forms kept from one word's inflection table. Languages that build words from endings (Finnish,
 # Hungarian, Turkish, Latin) list hundreds per word, mostly with possessive or clitic suffixes;
-# the tables lead with the common forms, so the first ones cover what a reader meets.
-MAX_TABLE_FORMS = 40
+# the tables lead with the common forms (the main cases, singular and plural), so the first ones
+# cover what a reader meets.
+MAX_TABLE_FORMS = 20
 SKIP_TABLE_FORM_TAGS = {"possessive", "clitic"}
 
 
@@ -128,6 +131,8 @@ def build(src, lang, out, version):
         PRAGMA synchronous = OFF;
         CREATE TABLE entries(key TEXT NOT NULL, word TEXT, fold TEXT, pos TEXT NOT NULL, ipa TEXT, senses TEXT NOT NULL);
         CREATE TABLE forms(key TEXT NOT NULL, fold TEXT, pos TEXT, lemma TEXT NOT NULL, label INTEGER);
+        CREATE TABLE inflections(key TEXT NOT NULL, lemma INTEGER NOT NULL, PRIMARY KEY(key, lemma)) WITHOUT ROWID;
+        CREATE TABLE lemmas(id INTEGER PRIMARY KEY, word TEXT NOT NULL);
         CREATE TABLE labels(id INTEGER PRIMARY KEY, text TEXT NOT NULL);
         CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
         """
@@ -176,10 +181,15 @@ def build(src, lang, out, version):
     db.execute("CREATE INDEX entries_fold ON entries(fold) WHERE fold IS NOT NULL")
     known = {row[0] for row in db.execute("SELECT DISTINCT key FROM entries")}
     known |= {row[0] for row in form_rows}
-    for form_key, pos, lemma in table_forms:
+    # A table form is found by its exact spelling only: without an accent-free copy, languages with
+    # big tables and accented letters (Finnish ä, ö) stay a reasonable size.
+    lemma_ids = {}
+    inflections = set()
+    for form_key, _pos, lemma in table_forms:
         if form_key not in known:
-            folded = fold(form_key)
-            form_rows.add((form_key, folded if folded != form_key else None, pos, lemma, None))
+            inflections.add((form_key, lemma_ids.setdefault(lemma, len(lemma_ids) + 1)))
+    db.executemany("INSERT INTO lemmas VALUES (?, ?)", [(i, w) for w, i in lemma_ids.items()])
+    db.executemany("INSERT INTO inflections VALUES (?, ?)", sorted(inflections))
     labels = {}
 
     def label_id(gloss, lemma):
@@ -213,7 +223,7 @@ def build(src, lang, out, version):
         "lang": lang,
         "version": version,
         "entries": entries,
-        "forms": len(form_rows),
+        "forms": len(form_rows) + len(inflections),
         "bytes": os.path.getsize(out),
         "gzipBytes": os.path.getsize(gz),
         "sha256": digest,
