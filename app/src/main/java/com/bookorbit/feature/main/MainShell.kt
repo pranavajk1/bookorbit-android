@@ -1,5 +1,6 @@
 package com.bookorbit.feature.main
 
+import android.annotation.SuppressLint
 import android.net.Uri
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -175,7 +176,9 @@ fun MainShell(
     val backStackEntry by tabNav.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     // The tab the current screen belongs to: the nearest tab root under it in the back stack, so a
-    // book opened from Home still counts as Home.
+    // book opened from Home still counts as Home. currentBackStack is public but marked for the
+    // Navigation library's own use; it's the only way to read the stack's order.
+    @SuppressLint("RestrictedApi")
     val backStack by tabNav.currentBackStack.collectAsStateWithLifecycle()
     val currentTab = backStack.lastOrNull { it.destination.route in barRoutes }?.destination?.route
     val twoPane = directive.maxHorizontalPartitions > 1 && currentRoute in LIST_ROUTES
