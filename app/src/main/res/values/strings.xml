@@ -151,6 +151,9 @@
     <string name="tags">Tags</string>
     <string name="tap_for_menu">Tap for menu</string>
     <string name="this_removes_every_downloaded_file">This removes every downloaded file from this device. You can download books again later.</string>
+    <string name="remove_download_title">Remove download?</string>
+    <string name="remove_download_body">“%1$s” will be deleted from this device. You won’t be able to read it offline until you download it again.</string>
+    <string name="remove_download_body_untitled">This book will be deleted from this device. You won’t be able to read it offline until you download it again.</string>
     <string name="to">To</string>
     <string name="total_a_day">%1$s total · %2$s a day</string>
     <string name="upload_a_file">Upload a file</string>

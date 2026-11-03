@@ -78,6 +78,8 @@ import com.bookorbit.core.db.DownloadEntity
 import com.bookorbit.core.model.BookAnnotation
 import com.bookorbit.core.model.BookDetail
 import com.bookorbit.core.model.BookFiles
+import com.bookorbit.feature.downloads.RemoveDownloadDialog
+import com.bookorbit.feature.downloads.isCompleteDownloadStatus
 import com.bookorbit.feature.reader.highlightColor
 import com.bookorbit.ui.LocalBookAvailability
 import com.bookorbit.ui.LocalImageUrls
@@ -422,16 +424,19 @@ private fun PrimaryActions(
 @Composable
 private fun DownloadControl(download: DownloadEntity?, actions: BookDetailActions, modifier: Modifier) {
     val tokens = BookOrbitTheme.tokens
-    when (download?.status) {
-        "COMPLETE" -> SecondaryButton(stringResource(R.string.downloaded), actions.onRemoveDownload, modifier, icon = Icons.Outlined.CheckCircle)
-        "DOWNLOADING" -> Row(
+    var confirmRemove by remember { mutableStateOf(false) }
+    if (confirmRemove) RemoveDownloadDialog(download?.title, onConfirm = actions.onRemoveDownload, onDismiss = { confirmRemove = false })
+    when {
+        download?.status?.isCompleteDownloadStatus() == true ->
+            SecondaryButton(stringResource(R.string.downloaded), { confirmRemove = true }, modifier, icon = Icons.Outlined.CheckCircle)
+        download?.status == "DOWNLOADING" -> Row(
             modifier.height(40.dp).clip(MaterialTheme.shapes.small).border(1.dp, tokens.input, MaterialTheme.shapes.small).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CircularProgressIndicator(progress = { download.progress }, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
             Text(stringResource(R.string.downloading, (download.progress * 100).toInt()), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 8.dp))
         }
-        "FAILED" -> SecondaryButton(stringResource(R.string.retry_download), actions.onDownload, modifier, icon = Icons.Outlined.Download)
+        download?.status == "FAILED" -> SecondaryButton(stringResource(R.string.retry_download), actions.onDownload, modifier, icon = Icons.Outlined.Download)
         else -> SecondaryButton(stringResource(R.string.download), actions.onDownload, modifier, icon = Icons.Outlined.Download)
     }
 }
