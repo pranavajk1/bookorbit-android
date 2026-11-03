@@ -6,17 +6,32 @@ sidebar_position: 2
 
 Orbiter requires **Android 8.0 (API 26)** or newer.
 
-## Play Store
-
-The easiest way to install is from the Google Play Store (once published). Search for
-"Orbiter – for BookOrbit" or follow the link from the
-[GitHub repository](https://github.com/pranavajk1/orbiter-for-bookorbit).
-
 ## GitHub releases
 
-Each release's APKs are attached to its page under
-[Releases](https://github.com/pranavajk1/orbiter-for-bookorbit/releases): `orbiter-<version>.apk` is the
-full build, and `orbiter-fdroid-<version>.apk` leaves out Google's Cast library (so no Chromecast).
+Download the APK from the
+[latest release](https://github.com/pranavajk1/orbiter-for-bookorbit/releases/latest) and open it on
+your phone. Android asks you to allow installing apps from your browser or file manager the first
+time.
+
+- `orbiter-<version>.apk` is the full build, with Chromecast.
+- `orbiter-fdroid-<version>.apk` leaves out Google's Cast library, so it has no Chromecast.
+
+GitHub doesn't update apps by itself, so check the releases page for new versions.
+
+## F-Droid
+
+Orbiter is coming to F-Droid, which will keep it up to date for you.
+
+## Google Play
+
+Orbiter isn't on Google Play yet. Google only lists an app from a new developer after a closed
+test with at least 12 testers, and that test opens soon. This page will say how to join it.
+
+## Switching between them
+
+Every Orbiter build is signed with the same key, whichever source it comes from. You can install
+from GitHub now and move to F-Droid or Google Play later: the new source updates the app you have,
+without reinstalling or losing your downloads and settings.
 
 ## Building from source
 
