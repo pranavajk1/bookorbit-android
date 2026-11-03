@@ -24,7 +24,7 @@ its own design and release line (application id `com.pranavajk.orbiter`).
 | Tool               | Version                                | Notes                                                   |
 | ------------------ | -------------------------------------- | ------------------------------------------------------- |
 | **Android Studio** | Ladybug (2024.2) or newer              | Easiest path; bundles a compatible JDK + SDK manager.   |
-| **JDK**            | 17+ (21 recommended)                   | Android Studio's bundled JBR works. CI uses Temurin 21. |
+| **JDK**            | 17+ (25 recommended)                   | Android Studio's bundled JBR works. CI uses Temurin 25. |
 | **Android SDK**    | Platform **36**, Build-Tools 35+       | Installed via Android Studio's SDK Manager.             |
 | **A device**       | Emulator (API 26+) or a physical phone | Min SDK is **26**; compile/target SDK is **36**.        |
 

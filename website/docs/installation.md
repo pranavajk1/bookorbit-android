@@ -27,7 +27,7 @@ If you'd rather build it yourself:
 | Tool               | Version                                | Notes                                                   |
 | ------------------ | --------------------------------------- | -------------------------------------------------------- |
 | **Android Studio** | Ladybug (2024.2) or newer               | Easiest path; bundles a compatible JDK + SDK manager.    |
-| **JDK**            | 17+ (21 recommended)                    | Android Studio's bundled JBR works.                      |
+| **JDK**            | 17+ (25 recommended)                    | Android Studio's bundled JBR works.                      |
 | **Android SDK**    | Platform **37**, Build-Tools 35+        | Installed via Android Studio's SDK Manager.              |
 | **A device**       | Emulator (API 26+) or a physical phone  | Min SDK is **26**; compile/target SDK is **37**.         |
 
