@@ -60,11 +60,11 @@ android {
         minSdk = 26
         targetSdk = 37
         // versionCode/versionName are bumped automatically by a companion step in
-        // .github/workflows/release-please.yml (release-please's own generic-file updater is
+        // .github/workflows/release.yml (release-please's own generic-file updater is
         // unreliable for this -- see the commit that introduced this comment). Both must stay
         // plain literals so F-Droid's static manifest parser can find them too.
-        versionCode = 804
-        versionName = "0.8.0-redesign.5"
+        versionCode = 1
+        versionName = "0.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
