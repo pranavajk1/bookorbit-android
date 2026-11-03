@@ -173,6 +173,7 @@ class ScreensScreenshotTest(private val device: ScreenshotDevice, private val da
                 authorBooks = Fake.recommendations.take(3),
                 recommendations = Fake.recommendations,
                 fileProgress = mapOf(11 to 42.0),
+                highlights = List(3) { BookAnnotation(id = it, bookId = Fake.detail.id, text = "A passage worth keeping.") },
             ),
             download = null,
             actions = Fake.bookActions,

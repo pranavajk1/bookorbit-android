@@ -381,7 +381,6 @@
     <string name="detail_tab_details">Details</string>
     <string name="detail_tab_files">Files</string>
     <string name="detail_tab_highlights">Highlights</string>
-    <string name="detail_tab_highlights_n">Highlights %1$d</string>
     <string name="detail_add_to_collection">Add to collection</string>
     <string name="detail_row_pages">Pages</string>
     <string name="detail_row_language">Language</string>
