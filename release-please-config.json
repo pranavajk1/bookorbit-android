@@ -5,7 +5,8 @@
   "bootstrap-sha": "18335ca80a1dec76997eefdcb3871877670f68b2",
   "packages": {
     ".": {
-      "pull-request-title-pattern": "release: ${version}"
+      "pull-request-title-pattern": "release: ${version}",
+      "initial-version": "0.1.0"
     }
   }
 }
