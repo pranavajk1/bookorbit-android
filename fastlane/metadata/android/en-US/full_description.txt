@@ -23,4 +23,4 @@ ABOUT
 Orbiter is an independent, unofficial app. It is not made, approved or
 endorsed by the BookOrbit project. It began as a fork of the community
 BookOrbit Android client and is free software under the GNU AGPLv3:
-https://github.com/pranavajk1/bookorbit-android
+https://github.com/pranavajk1/orbiter-for-bookorbit
