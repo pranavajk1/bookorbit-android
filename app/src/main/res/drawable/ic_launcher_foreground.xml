@@ -1,8 +1,8 @@
 <!--
-  Adaptive-icon foreground: the BookOrbit "Orbit" mark (Lucide), ported from
-  client/public/pwa-icon-source.svg. The 24x24 glyph is scaled (~x2.8) and centered into the
-  108x108 adaptive viewport so it sits inside the safe zone. Stroked white; circles are arc paths
-  (VectorDrawable has no circle element).
+  Adaptive-icon foreground: the Orbiter mark (a sun, two broken orbits, five planets), drawn on a
+  512x512 canvas in store-assets/icon-source.svg and scaled by 0.16 into the 108x108 adaptive
+  viewport, which puts its ~50dp span well inside the 66dp safe zone. Circles are arc paths
+  (VectorDrawable has no circle element). Keep the paths in step with ic_orbit.xml.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -10,39 +10,17 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <group
-        android:scaleX="2.8"
-        android:scaleY="2.8"
-        android:translateX="20.4"
-        android:translateY="20.4">
+        android:scaleX="0.16"
+        android:scaleY="0.16"
+        android:translateX="13.04"
+        android:translateY="13.04">
         <path
-            android:pathData="M20.341 6.484A10 10 0 0 1 10.266 21.85"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="1.5"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
+            android:fillColor="#FFFFFF"
+            android:pathData="M198.75,262.5a57.25,57.25 0 1,0 114.5,0a57.25,57.25 0 1,0 -114.5,0ZM306.9,193.1a18.5,18.5 0 1,0 37,0a18.5,18.5 0 1,0 -37,0ZM212.1,357.31a18.5,18.5 0 1,0 37,0a18.5,18.5 0 1,0 -37,0ZM237.5,117.8a18.5,18.5 0 1,0 37,0a18.5,18.5 0 1,0 -37,0ZM111.56,333.75a18.5,18.5 0 1,0 37,0a18.5,18.5 0 1,0 -37,0ZM331.48,372.53a18.5,18.5 0 1,0 37,0a18.5,18.5 0 1,0 -37,0Z" />
         <path
-            android:pathData="M3.659 17.516A10 10 0 0 1 13.74 2.152"
+            android:pathData="M298.1,173.84A98.15,98.15 0 0,0 200.27,343.29M263.87,360.33A98.15,98.15 0 0,0 344.66,220.4M222.47,121.74A144.7,144.7 0 0,0 116.98,302.63M150,361A144.7,144.7 0 0,0 321.92,391.31M372.92,347.76A144.7,144.7 0 0,0 289.53,121.74"
             android:strokeColor="#FFFFFF"
-            android:strokeWidth="1.5"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
-        <path
-            android:pathData="M9,12 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="1.5"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
-        <path
-            android:pathData="M17,5 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="1.5"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
-        <path
-            android:pathData="M3,19 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0"
-            android:strokeColor="#FFFFFF"
-            android:strokeWidth="1.5"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round" />
+            android:strokeWidth="11.2"
+            android:strokeLineCap="round" />
     </group>
 </vector>
