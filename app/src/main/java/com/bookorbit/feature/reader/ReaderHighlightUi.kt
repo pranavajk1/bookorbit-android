@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -92,7 +93,9 @@ fun SelectionToolbar(
         color = Color(0xFF1E1E1E),
         border = BorderStroke(1.dp, Color.White.copy(alpha = 0.14f)),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)) {
+        // As wide as its widest row. Otherwise the divider (and the spacer before delete) fill the
+        // whole width they're offered, which on a tablet stretched the toolbar across the screen.
+        Column(modifier = Modifier.width(IntrinsicSize.Max).padding(horizontal = 6.dp, vertical = 4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ReaderAnnotationRepository.COLORS.forEach { (name, hex) ->
                     val selected = currentColor != null && currentColor.equals(hex, ignoreCase = true) || currentColor == name
