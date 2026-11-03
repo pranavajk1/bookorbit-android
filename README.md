@@ -27,9 +27,15 @@ Orbiter needs Android 8.0 or newer and a BookOrbit server to connect to.
   [latest release](https://github.com/pranavajk1/orbiter-for-bookorbit/releases/latest).
   `orbiter-<version>.apk` is the full build, with Chromecast. `orbiter-fdroid-<version>.apk` leaves
   out Google's Cast library.
-- **F-Droid:** coming soon.
-- **Google Play:** not listed yet. Google first requires a closed test with 12 testers, which opens
-  soon; see [`docs/google-play.md`](docs/google-play.md).
+- **Google Play** (closed test): Orbiter isn't publicly listed yet. Google first needs at least 12
+  testers in a closed test for 14 days, and you can help by joining it:
+  1. Join the [orbiter-testers](https://groups.google.com/g/orbiter-testers) Google Group.
+  2. With the same Google account, open
+     [play.google.com/apps/testing/com.pranavajk.orbiter](https://play.google.com/apps/testing/com.pranavajk.orbiter)
+     and tap **Become a tester**.
+  3. Install Orbiter from the Play Store link on that page. It updates through Play like any other app.
+- **F-Droid:** submitted and waiting for review
+  ([fdroiddata!55629](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/55629)).
 
 Every build is signed with the same key, whichever source it comes from, so you can switch sources
 later and keep getting updates without reinstalling.

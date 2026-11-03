@@ -18,14 +18,32 @@ time.
 
 GitHub doesn't update apps by itself, so check the releases page for new versions.
 
+## Google Play (closed test)
+
+Orbiter isn't publicly listed on Google Play yet. Google only lists an app from a new developer
+after at least 12 people have tested it for 14 days in a row, so joining the test helps get it
+there. Testers get Orbiter from the Play Store, with updates like any other app.
+
+1. Join the [orbiter-testers](https://groups.google.com/g/orbiter-testers) Google Group. You need
+   a Google account; joining just puts you on the tester list.
+2. Signed in with **the same Google account**, open
+   [play.google.com/apps/testing/com.pranavajk.orbiter](https://play.google.com/apps/testing/com.pranavajk.orbiter)
+   and tap **Become a tester**.
+3. Follow the Play Store link on that page and install Orbiter. It can take a few minutes after
+   opting in before the Play Store shows it.
+
+If the testing page says the app isn't available, either the Google account you're signed in
+with isn't the one that joined the group, or a new release is still in Google's review. Check the
+account, or try again in a day or two.
+
+To stop testing, use **Leave the program** on the same testing page. Leaving the group as well
+removes you from the tester list.
+
 ## F-Droid
 
-Orbiter is coming to F-Droid, which will keep it up to date for you.
-
-## Google Play
-
-Orbiter isn't on Google Play yet. Google only lists an app from a new developer after a closed
-test with at least 12 testers, and that test opens soon. This page will say how to join it.
+Orbiter isn't on F-Droid yet. It's been submitted and is waiting for review; you can follow it in
+[the merge request](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/55629). F-Droid asks for a
+few months of development before it includes a new app, so expect it to take a while.
 
 ## Switching between them
 

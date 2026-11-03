@@ -94,7 +94,7 @@ skips only that step.
 
 ## After setup
 
-- Add the group's link to the README's and the docs' install sections, next to the opt-in page.
+- The README's and the docs' install sections link the group (`orbiter-testers`) and the opt-in page.
 - After 14 days with 12 or more testers opted in the whole time, apply for production access in
   Play Console. Google says the review usually takes up to a week. Testers who leave the group stop
   counting, so keep an eye on the number near the end.
