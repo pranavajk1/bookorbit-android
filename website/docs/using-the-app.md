@@ -15,8 +15,8 @@ The library screen lists the books available on your server. From there you can:
 
 ## Reading ebooks
 
-BookOrbit's reader is built on [foliate.js](https://github.com/johnfactotum/foliate-js) and
-supports EPUB, MOBI, AZW3, FB2 and CBZ ebooks, plus a separate native PDF reader. It syncs reading progress (via CFI) back to your server, so you can pick up where
+Orbiter's reader is built on [foliate.js](https://github.com/johnfactotum/foliate-js) and
+supports EPUB, MOBI, AZW3, FB2 and CBZ ebooks, plus separate native PDF and comic readers. It syncs reading progress (via CFI) back to your server, so you can pick up where
 you left off on another device or in the web client. The reader includes adjustable themes, font
 size, and layout settings.
 
@@ -37,16 +37,18 @@ reader's selection menu:
 
 - **Highlight** in one of five colours, or **add a note** to the selection.
 - **Copy** the text.
-- **Define** looks the word up (Free Dictionary, falling back to Wiktionary and to the book's own
-  language).
+- **Define** looks the word up in the dictionary for the book's language, on the device. The first
+  time, the app offers to download that dictionary (built from Wiktionary); after that, lookups
+  work offline. Manage dictionaries in **Settings → Dictionaries**.
 - **Translate** into English, Spanish, French, German, Chinese, Japanese, Korean, Arabic, Hindi or
   Portuguese; the language you pick is remembered.
 - **Search** the book for the selection.
 - **Read from here** reads the book aloud with your phone's text-to-speech voice from that
   sentence on, turning pages as it goes. Pause or stop it from the bar at the bottom of the page.
 
-Tap an existing highlight for the same actions, plus recolour and delete. Define and Translate send
-the selected text to those public services; see the [privacy policy](https://deranjer.github.io/bookorbit-android/privacy.html).
+Tap an existing highlight for the same actions, plus recolour and delete. Translate sends the
+selected text to a public translation service; Define doesn't send anything. See the
+[privacy policy](pathname:///privacy.html).
 
 ## Listening to audiobooks
 
@@ -60,11 +62,13 @@ Audiobook playback uses Media3/ExoPlayer, with:
 ## Downloads and offline use
 
 Books and audiobooks can be **downloaded** for offline access. Downloaded files are stored
-locally on your device; you can manage or remove them from the downloads screen. Deleting a
-download only removes the local copy — it does not affect the book on your server.
+locally on your device; you can manage or remove them from the downloads screen, or tap
+**Downloaded** on a book's page. Either way the app asks before it removes anything. Removing a
+download only deletes the local copy — it does not affect the book on your server — but you'll need
+a connection to download it again.
 
 ## Account and data
 
-See the [privacy policy](https://deranjer.github.io/bookorbit-android/privacy.html) for details
+See the [privacy policy](pathname:///privacy.html) for details
 on what data the app handles and where it's stored. In short: everything goes to the server you
 configure, and nothing is sent to the developer.

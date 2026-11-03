@@ -4,7 +4,7 @@ sidebar_position: 3
 
 # Connecting to a server
 
-BookOrbit is a client for your own **self-hosted** BookOrbit server — the app doesn't talk to
+Orbiter is a client for your own **self-hosted** BookOrbit server — the app doesn't talk to
 anything operated by the developer. On first launch, you'll be asked for your server's URL.
 
 ## Server URL

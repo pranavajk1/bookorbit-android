@@ -3,18 +3,18 @@ import {themes as prismThemes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'BookOrbit',
-  tagline: 'Native Android client for self-hosted BookOrbit libraries',
+  title: 'Orbiter',
+  tagline: 'An Android app for your self-hosted BookOrbit library',
   favicon: 'img/favicon.ico',
 
   future: {
     v4: true,
   },
 
-  url: 'https://deranjer.github.io',
+  url: 'https://pranavajk1.github.io',
   baseUrl: '/bookorbit-android/',
 
-  organizationName: 'deranjer',
+  organizationName: 'pranavajk1',
   projectName: 'bookorbit-android',
 
   onBrokenLinks: 'throw',
@@ -31,7 +31,7 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          editUrl: 'https://github.com/deranjer/bookorbit-android/tree/main/website/',
+          editUrl: 'https://github.com/pranavajk1/bookorbit-android/tree/main/website/',
         },
         blog: false,
         theme: {
@@ -49,9 +49,9 @@ const config = {
         respectPrefersColorScheme: true,
       },
       navbar: {
-        title: 'BookOrbit',
+        title: 'Orbiter',
         logo: {
-          alt: 'BookOrbit Logo',
+          alt: 'Orbiter logo',
           src: 'img/logo.svg',
         },
         items: [
@@ -62,12 +62,12 @@ const config = {
             label: 'Docs',
           },
           {
-            href: 'https://deranjer.github.io/bookorbit-android/privacy.html',
+            to: 'pathname:///privacy.html',
             label: 'Privacy Policy',
             position: 'right',
           },
           {
-            href: 'https://github.com/deranjer/bookorbit-android',
+            href: 'https://github.com/pranavajk1/bookorbit-android',
             label: 'GitHub',
             position: 'right',
           },
@@ -90,16 +90,16 @@ const config = {
             items: [
               {
                 label: 'Privacy Policy',
-                href: 'https://deranjer.github.io/bookorbit-android/privacy.html',
+                to: 'pathname:///privacy.html',
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/deranjer/bookorbit-android',
+                href: 'https://github.com/pranavajk1/bookorbit-android',
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} BookOrbit.`,
+        copyright: `Copyright © ${new Date().getFullYear()} Orbiter contributors. Orbiter is unofficial and not endorsed by the BookOrbit project.`,
       },
       prism: {
         theme: prismThemes.github,

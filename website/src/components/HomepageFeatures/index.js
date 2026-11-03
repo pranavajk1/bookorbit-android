@@ -8,7 +8,7 @@ const FeatureList = [
     Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        BookOrbit connects to a self-hosted BookOrbit server that you control.
+        Orbiter connects to a self-hosted BookOrbit server that you control.
         Nothing is sent to the app developer.
       </>
     ),

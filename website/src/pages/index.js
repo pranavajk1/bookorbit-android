@@ -33,7 +33,7 @@ export default function Home() {
   return (
     <Layout
       title={siteConfig.tagline}
-      description="Docs for the BookOrbit Android app — install, connect to your server, and use the app.">
+      description="Docs for Orbiter, an Android app for BookOrbit servers — install it, connect to your server, and use the app.">
       <HomepageHeader />
       <main>
         <HomepageFeatures />
