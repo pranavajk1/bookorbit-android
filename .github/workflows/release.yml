@@ -1,0 +1,181 @@
+name: Release
+
+# The whole release, from version bump to stores, in one workflow.
+#
+# Every push to main runs release-please, which keeps a "release: x.y.z" PR open with the version
+# bump and changelog drawn from the conventional commits (feat:/fix:/etc.) merged since the last
+# release (bootstrap-sha in release-please-config.json is upstream's last release, so the fork's
+# first changelog covers only its own commits). Nothing else happens on those pushes. Merging that release PR is the one manual step: on
+# that push release-please tags it and creates the GitHub Release, and the publish job then
+#   - builds the signed "full" APK and AAB and the signed "fdroid" APK,
+#   - attaches all three to the GitHub Release, and
+#   - uploads the AAB to Play's internal track (promoting to production stays manual in Play Console).
+#
+# Only the release PR that release-please opened ships anything: release-please tracks it by label,
+# so another PR whose title happens to start with "release" is just an ordinary merge.
+#
+# F-Droid needs no upload. The official F-Droid build makes the "fdroid" flavor itself from the new
+# tag, and the "fdroid" APK attached here is what its recipe checks that build against
+# (Binaries/AllowedAPKSigningKeys, for reproducible-build verification).
+#
+# Run it by hand with an existing tag to redo the publish job, for example after a failed Play upload.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to build, attach and upload to Play again
+        required: true
+        type: string
+
+# Runs one at a time, so two quick pushes can't race on the release PR or the release itself.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Update release PR
+    if: ${{ github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # Settings (release type, PR title) live in release-please-config.json.
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
+        id: release
+
+      # release-please's own generic-file updater (the `x-release-please-version` comment marker)
+      # is unreliable in practice -- see https://github.com/googleapis/release-please-action/issues/1130
+      # -- so app/build.gradle.kts isn't in its extra-files config at all. Instead this reads the
+      # version release-please just computed out of .release-please-manifest.json (which it does
+      # update reliably) and writes versionName and the derived versionCode into
+      # app/build.gradle.kts, on the same release PR before anyone merges it.
+      - name: Checkout pending release PR branch
+        if: ${{ steps.release.outputs.prs_created == 'true' }}
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ fromJson(steps.release.outputs.pr).headBranchName }}
+
+      - name: Pin versionName/versionCode on the release PR
+        if: ${{ steps.release.outputs.prs_created == 'true' }}
+        run: |
+          set -euo pipefail
+          versionName=$(jq -r '.["."]' .release-please-manifest.json)
+          IFS='.' read -r major minor patch <<< "${versionName%%-*}"
+          versionCode=$((major * 10000 + minor * 100 + patch))
+          currentCode=$(sed -n 's/^ *versionCode = \([0-9]\+\)$/\1/p' app/build.gradle.kts)
+          sed -i "s/versionName = \"[^\"]*\"/versionName = \"${versionName}\"/" app/build.gradle.kts
+          sed -i "s/versionCode = [0-9]\+/versionCode = ${versionCode}/" app/build.gradle.kts
+          if git diff --quiet -- app/build.gradle.kts; then
+            echo "already at versionName ${versionName} / versionCode ${versionCode}, nothing to commit"
+            exit 0
+          fi
+          # Play and already-installed copies refuse an update whose versionCode isn't higher.
+          if (( versionCode <= currentCode )); then
+            echo "::error::versionCode ${versionCode} for ${versionName} is not above the current ${currentCode}; raise it before releasing"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: pin versionName ${versionName} / versionCode ${versionCode}"
+          git push
+
+  publish:
+    name: Build, attach, upload to Play
+    needs: release-please
+    if: >-
+      ${{ !cancelled() && (github.event_name == 'workflow_dispatch' ||
+      (needs.release-please.result == 'success' && needs.release-please.outputs.release_created == 'true')) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ inputs.tag || needs.release-please.outputs.tag_name }}
+
+    steps:
+      - name: Check release secrets
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          missing=()
+          for name in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS \
+            RELEASE_KEY_PASSWORD PLAY_SERVICE_ACCOUNT_JSON; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing repo secrets: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: ${{ env.TAG }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          # Google removed the legacy standalone "tools" package (this action's default) from the
+          # SDK repository; sdkmanager now fails to find it. platform-tools is all this job needs -
+          # the Android Gradle Plugin fetches whatever platform/build-tools versions it requires on
+          # its own, once licenses are accepted.
+          packages: 'platform-tools'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@48b5f213c81028ace310571dc5ec0fbbca0b2947 # v4
+
+      # Both files are gitignored; app/build.gradle.kts signs releases and enables Gradle Play
+      # Publisher only when they exist (see app/keystore.properties.example).
+      - name: Set up release signing and Play credentials
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          cat > app/keystore.properties <<EOF
+          storeFile=$RUNNER_TEMP/release.jks
+          storePassword=$RELEASE_KEYSTORE_PASSWORD
+          keyAlias=$RELEASE_KEY_ALIAS
+          keyPassword=$RELEASE_KEY_PASSWORD
+          EOF
+          echo "$PLAY_SERVICE_ACCOUNT_JSON" > app/play-service-account.json
+
+      - name: Build signed APKs and Play bundle
+        run: ./gradlew :app:assembleFullRelease :app:assembleFdroidRelease :app:bundleFullRelease --stacktrace
+
+      - name: Attach to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${TAG#v}"
+          cp app/build/outputs/apk/full/release/app-full-release.apk "bookorbit-$VERSION.apk"
+          cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk "bookorbit-fdroid-$VERSION.apk"
+          cp app/build/outputs/bundle/fullRelease/app-full-release.aab "bookorbit-$VERSION.aab"
+          ASSETS=("bookorbit-$VERSION.apk" "bookorbit-fdroid-$VERSION.apk" "bookorbit-$VERSION.aab")
+          gh release upload "$TAG" "${ASSETS[@]}" --clobber ||
+            gh release create "$TAG" "${ASSETS[@]}" --title "$TAG" --generate-notes
+
+      # Reuses the bundle built above (the task is up to date), so Play gets the same AAB that
+      # was just attached to the release.
+      - name: Upload bundle to Play internal track
+        run: ./gradlew :app:publishFullReleaseBundle --stacktrace

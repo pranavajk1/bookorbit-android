@@ -127,8 +127,10 @@ app/src/main/
 ./gradlew :app:testDebugUnitTest    # unit tests (query builder, playback math, serialization)
 ```
 
-CI (`.github/workflows/android-build.yml`) runs lint + unit tests + `assembleDebug` on every PR and
-on pushes to `main`.
+CI (`.github/workflows/ci.yml`) runs lint, unit tests and a debug build of both flavors on every PR.
+Releases (`.github/workflows/release.yml`) ship when the `release: x.y.z` PR that release-please
+keeps open is merged: signed APKs and AAB go on the GitHub Release, and the AAB goes to Play's
+internal track.
 
 ## Cross-repo couplings
 
