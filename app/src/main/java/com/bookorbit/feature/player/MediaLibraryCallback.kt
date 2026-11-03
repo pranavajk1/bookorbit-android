@@ -52,12 +52,10 @@ class MediaLibraryCallback @Inject constructor(
     private var queueRequestGeneration = 0L
 
     override fun onConnect(session: MediaSession, controller: ControllerInfo): MediaSession.ConnectionResult {
-        val base = super<MediaLibrarySession.Callback>.onConnect(session, controller)
-        if (!base.isAccepted || controller.packageName != context.packageName) return base
-        return MediaSession.ConnectionResult.accept(
-            base.availableSessionCommands.buildUpon().add(BookQueueCommand.command).build(),
-            base.availablePlayerCommands,
-        )
+        if (controller.packageName != context.packageName) {
+            return super<MediaLibrarySession.Callback>.onConnect(session, controller)
+        }
+        return connectionResultForApp(session, controller)
     }
 
     override fun onCustomCommand(
@@ -236,4 +234,20 @@ class MediaLibraryCallback @Inject constructor(
         }
         return settable
     }
+}
+
+/**
+ * What the app's own controllers get: Media3's defaults for a trusted controller, plus the book-queue
+ * command. Built with [MediaSession.ConnectionResult.AcceptedResultBuilder] rather than copied from
+ * `super.onConnect`, which since Media3 1.11 returns a placeholder whose command sets are empty
+ * (Media3 swaps in the defaults only for that exact object). Copying its fields left the app's
+ * controllers, Media3's notification controller among them, with no player commands: no media
+ * notification, no foreground service, and the UI's play() refused.
+ */
+@UnstableApi
+internal fun connectionResultForApp(session: MediaSession, controller: ControllerInfo): MediaSession.ConnectionResult {
+    val defaults = MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller).build()
+    return MediaSession.ConnectionResult.AcceptedResultBuilder(session, controller)
+        .setAvailableSessionCommands(defaults.availableSessionCommands.buildUpon().add(BookQueueCommand.command).build())
+        .build()
 }
