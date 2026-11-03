@@ -29,8 +29,10 @@ val playServiceAccountFile = rootProject.file("app/play-service-account.json")
 if (playServiceAccountFile.exists()) {
     play {
         serviceAccountCredentials.set(playServiceAccountFile)
-        // Upload only -- promoting internal to production stays a manual step in Play Console.
-        track.set("internal")
+        // Upload only, to closed testing ("alpha" in the Play API). A new personal account needs 12
+        // testers there for 14 days before it can publish to production; promoting a release to
+        // production stays a manual step in Play Console. See docs/google-play.md.
+        track.set("alpha")
         defaultToAppBundles.set(true)
     }
 }

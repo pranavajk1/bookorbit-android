@@ -19,6 +19,21 @@ its own design and release line (application id `com.pranavajk.orbiter`).
 > downloads/offline. See [Architecture & conventions](#architecture--conventions) below, the
 > [Cross-repo couplings](#cross-repo-couplings) section, and [`ROADMAP.md`](ROADMAP.md) for what's next.
 
+## Install
+
+Orbiter needs Android 8.0 or newer and a BookOrbit server to connect to.
+
+- **GitHub Releases** (available now): download the APK from the
+  [latest release](https://github.com/pranavajk1/orbiter-for-bookorbit/releases/latest).
+  `orbiter-<version>.apk` is the full build, with Chromecast. `orbiter-fdroid-<version>.apk` leaves
+  out Google's Cast library.
+- **F-Droid:** coming soon.
+- **Google Play:** not listed yet. Google first requires a closed test with 12 testers, which opens
+  soon; see [`docs/google-play.md`](docs/google-play.md).
+
+Every build is signed with the same key, whichever source it comes from, so you can switch sources
+later and keep getting updates without reinstalling.
+
 ## Prerequisites
 
 | Tool               | Version                                | Notes                                                   |
