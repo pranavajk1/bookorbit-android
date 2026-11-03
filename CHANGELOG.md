@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/pranavajk1/orbiter-for-bookorbit/compare/v0.1.0...v0.1.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **player:** media notification and background playback controls ([#15](https://github.com/pranavajk1/orbiter-for-bookorbit/issues/15)) ([0aeeefb](https://github.com/pranavajk1/orbiter-for-bookorbit/commit/0aeeefbc359d7da602c22dfba321f4eb7af7ddc7))
+
 ## 0.1.0 (2026-11-03)
 
 
