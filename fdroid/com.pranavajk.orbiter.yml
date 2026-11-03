@@ -1,6 +1,7 @@
 AntiFeatures:
   NonFreeNet:
-    en-US: Translate in the reader sends the selected text to Google Translate or Microsoft Translator.
+    en-US: Translate in the reader sends the selected text to Google Translate or
+      Microsoft Translator.
 Categories:
   - Audiobook
   - Ebook Reader
@@ -15,7 +16,8 @@ AutoName: Orbiter
 
 RepoType: git
 Repo: https://github.com/pranavajk1/orbiter-for-bookorbit.git
-Binaries: https://github.com/pranavajk1/orbiter-for-bookorbit/releases/download/v%v/orbiter-fdroid-%v.apk
+Binaries: 
+  https://github.com/pranavajk1/orbiter-for-bookorbit/releases/download/v%v/orbiter-fdroid-%v.apk
 
 Builds:
   - versionName: 0.1.0
