@@ -41,7 +41,9 @@ removes you from the tester list.
 
 ## F-Droid
 
-Orbiter isn't on F-Droid yet; a submission is planned.
+Orbiter isn't on F-Droid yet. It's been submitted and is waiting for review; you can follow it in
+[the merge request](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/55629). F-Droid asks for a
+few months of development before it includes a new app, so expect it to take a while.
 
 ## Switching between them
 

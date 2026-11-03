@@ -34,7 +34,8 @@ Orbiter needs Android 8.0 or newer and a BookOrbit server to connect to.
      [play.google.com/apps/testing/com.pranavajk.orbiter](https://play.google.com/apps/testing/com.pranavajk.orbiter)
      and tap **Become a tester**.
   3. Install Orbiter from the Play Store link on that page. It updates through Play like any other app.
-- **F-Droid:** planned, not submitted yet.
+- **F-Droid:** submitted and waiting for review
+  ([fdroiddata!55629](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/55629)).
 
 Every build is signed with the same key, whichever source it comes from, so you can switch sources
 later and keep getting updates without reinstalling.
