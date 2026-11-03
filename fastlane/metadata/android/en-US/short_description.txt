@@ -1,1 +1,1 @@
-Your self-hosted ebook & audiobook library client.
+Read and listen to your self-hosted BookOrbit library.

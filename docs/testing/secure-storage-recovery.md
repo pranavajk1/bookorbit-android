@@ -1,6 +1,6 @@
 # Test PR #85: encrypted storage recovery
 
-Use `com.bookorbit.debug`, not the production installation. Build/install the full debug APK,
+Use `com.pranavajk.orbiter.debug`, not the production installation. Build/install the full debug APK,
 log into your normal server, browse/download a book, force-stop and reopen. Login should survive
 a normal restart. Sign out/in once and verify normal use still works.
 

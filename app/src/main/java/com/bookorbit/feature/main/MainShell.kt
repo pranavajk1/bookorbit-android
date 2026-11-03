@@ -432,7 +432,7 @@ private fun RailBrand(expanded: Boolean) {
     Row(Modifier.padding(start = if (expanded) 20.dp else 0.dp, top = 12.dp, bottom = 16.dp), verticalAlignment = Alignment.CenterVertically) {
         BrandLogo(size = 34)
         if (expanded) {
-            Text(stringResource(R.string.bookorbit), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 12.dp))
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 12.dp))
         }
     }
 }

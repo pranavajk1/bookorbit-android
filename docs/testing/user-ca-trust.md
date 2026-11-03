@@ -1,6 +1,6 @@
 # Test PR #86: user-installed CA trust
 
-Use the debug app (`com.bookorbit.debug`), which is separate from the production app.
+Use the debug app (`com.pranavajk.orbiter.debug`), which is separate from the production app.
 Normal HTTP and public-CA HTTPS servers should still work with the toggle off.
 
 ## Automated Android tests

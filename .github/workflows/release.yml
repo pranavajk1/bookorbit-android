@@ -168,10 +168,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${TAG#v}"
-          cp app/build/outputs/apk/full/release/app-full-release.apk "bookorbit-$VERSION.apk"
-          cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk "bookorbit-fdroid-$VERSION.apk"
-          cp app/build/outputs/bundle/fullRelease/app-full-release.aab "bookorbit-$VERSION.aab"
-          ASSETS=("bookorbit-$VERSION.apk" "bookorbit-fdroid-$VERSION.apk" "bookorbit-$VERSION.aab")
+          cp app/build/outputs/apk/full/release/app-full-release.apk "orbiter-$VERSION.apk"
+          cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk "orbiter-fdroid-$VERSION.apk"
+          cp app/build/outputs/bundle/fullRelease/app-full-release.aab "orbiter-$VERSION.aab"
+          ASSETS=("orbiter-$VERSION.apk" "orbiter-fdroid-$VERSION.apk" "orbiter-$VERSION.aab")
           gh release upload "$TAG" "${ASSETS[@]}" --clobber ||
             gh release create "$TAG" "${ASSETS[@]}" --title "$TAG" --generate-notes
 

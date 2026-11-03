@@ -17,8 +17,8 @@ import androidx.compose.ui.unit.dp
 import com.bookorbit.R
 
 /**
- * BookOrbit brand mark: the Lucide Orbit icon on a primary-gradient rounded square, mirroring the
- * web client's sidebar logo (client/src/components/AppSidebar.vue).
+ * Orbiter brand mark: the app icon's orbit glyph on a primary-gradient rounded square, in the place
+ * the web client gives its sidebar logo (client/src/components/AppSidebar.vue).
  */
 @Composable
 fun BrandLogo(modifier: Modifier = Modifier, size: Int = 72) {
@@ -34,7 +34,7 @@ fun BrandLogo(modifier: Modifier = Modifier, size: Int = 72) {
     ) {
         Icon(
             painter = painterResource(R.drawable.ic_orbit),
-            contentDescription = stringResource(R.string.bookorbit),
+            contentDescription = stringResource(R.string.app_name),
             tint = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier
                 .padding(size.dp * 0.22f)
