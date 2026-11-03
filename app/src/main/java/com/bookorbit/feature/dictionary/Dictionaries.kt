@@ -195,6 +195,6 @@ class Dictionaries @Inject constructor(
 
     companion object {
         /** The dictionaries are published as assets of this release of the app's repository. */
-        const val MANIFEST_URL = "https://github.com/pranavajk1/bookorbit-android/releases/download/dictionaries-v1/dictionaries.json"
+        const val MANIFEST_URL = "https://github.com/pranavajk1/orbiter-for-bookorbit/releases/download/dictionaries-v1/dictionaries.json"
     }
 }

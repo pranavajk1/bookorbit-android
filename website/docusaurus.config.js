@@ -12,10 +12,10 @@ const config = {
   },
 
   url: 'https://pranavajk1.github.io',
-  baseUrl: '/bookorbit-android/',
+  baseUrl: '/orbiter-for-bookorbit/',
 
   organizationName: 'pranavajk1',
-  projectName: 'bookorbit-android',
+  projectName: 'orbiter-for-bookorbit',
 
   onBrokenLinks: 'throw',
 
@@ -31,7 +31,7 @@ const config = {
       ({
         docs: {
           sidebarPath: './sidebars.js',
-          editUrl: 'https://github.com/pranavajk1/bookorbit-android/tree/main/website/',
+          editUrl: 'https://github.com/pranavajk1/orbiter-for-bookorbit/tree/main/website/',
         },
         blog: false,
         theme: {
@@ -67,7 +67,7 @@ const config = {
             position: 'right',
           },
           {
-            href: 'https://github.com/pranavajk1/bookorbit-android',
+            href: 'https://github.com/pranavajk1/orbiter-for-bookorbit',
             label: 'GitHub',
             position: 'right',
           },
@@ -94,7 +94,7 @@ const config = {
               },
               {
                 label: 'GitHub',
-                href: 'https://github.com/pranavajk1/bookorbit-android',
+                href: 'https://github.com/pranavajk1/orbiter-for-bookorbit',
               },
             ],
           },

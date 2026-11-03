@@ -143,6 +143,12 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        // The prebuilt .so files from AndroidX go in as published. AGP strips them only when an NDK
+        // is installed, so without this an F-Droid build (which has one) wouldn't match the CI build
+        // (which doesn't), and F-Droid's reproducible-build check would fail.
+        jniLibs {
+            keepDebugSymbols += "**/*.so"
+        }
     }
 }
 

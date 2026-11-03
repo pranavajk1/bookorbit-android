@@ -9,8 +9,8 @@ project. It started as a fork of the community
 [BookOrbit Android app](https://github.com/deranjer/bookorbit-android) by deranjer and now follows
 its own design and release line (application id `com.pranavajk.orbiter`).
 
-> User-facing docs: **https://pranavajk1.github.io/bookorbit-android/** (source in [`website/`](website/)).
-> Privacy policy: **https://pranavajk1.github.io/bookorbit-android/privacy.html**.
+> User-facing docs: **https://pranavajk1.github.io/orbiter-for-bookorbit/** (source in [`website/`](website/)).
+> Privacy policy: **https://pranavajk1.github.io/orbiter-for-bookorbit/privacy.html**.
 > Planned work: see [`ROADMAP.md`](ROADMAP.md).
 
 > **Status:** it supports auth + OIDC, library browsing, search, smart scopes, collections,

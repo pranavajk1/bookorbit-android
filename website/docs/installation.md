@@ -10,12 +10,12 @@ Orbiter requires **Android 8.0 (API 26)** or newer.
 
 The easiest way to install is from the Google Play Store (once published). Search for
 "Orbiter – for BookOrbit" or follow the link from the
-[GitHub repository](https://github.com/pranavajk1/bookorbit-android).
+[GitHub repository](https://github.com/pranavajk1/orbiter-for-bookorbit).
 
 ## GitHub releases
 
 Each release's APKs are attached to its page under
-[Releases](https://github.com/pranavajk1/bookorbit-android/releases): `orbiter-<version>.apk` is the
+[Releases](https://github.com/pranavajk1/orbiter-for-bookorbit/releases): `orbiter-<version>.apk` is the
 full build, and `orbiter-fdroid-<version>.apk` leaves out Google's Cast library (so no Chromecast).
 
 ## Building from source
@@ -33,7 +33,7 @@ If you'd rather build it yourself:
 
 ### Steps
 
-1. Clone the [repository](https://github.com/pranavajk1/bookorbit-android).
+1. Clone the [repository](https://github.com/pranavajk1/orbiter-for-bookorbit).
 2. Open the repository's root folder in Android Studio and let Gradle sync finish.
 3. Pick a device in the toolbar's device dropdown, then click **Run**.
 
