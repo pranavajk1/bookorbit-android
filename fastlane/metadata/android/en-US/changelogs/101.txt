@@ -1,0 +1,7 @@
+First release of Orbiter, an unofficial app for your BookOrbit server.
+
+• A new design, with a sign-in that follows what your server allows
+• Offline first: books you open stay on the device, and the library works without the server
+• Reader: highlights, notes, translate, search and read-aloud, plus offline dictionaries
+• Audiobooks: controls in the notification and on the lock screen, and playback that keeps going in the background
+• Asks before removing a download
