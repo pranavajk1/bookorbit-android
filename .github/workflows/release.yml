@@ -9,7 +9,8 @@ name: Release
 # that push release-please tags it and creates the GitHub Release, and the publish job then
 #   - builds the signed "full" APK and AAB and the signed "fdroid" APK,
 #   - attaches all three to the GitHub Release, and
-#   - uploads the AAB to Play's internal track (promoting to production stays manual in Play Console).
+#   - uploads the AAB to Play's internal track (promoting to production stays manual in Play Console),
+#     but only once a PLAY_SERVICE_ACCOUNT_JSON secret exists; without one the Play step is skipped.
 #
 # Only the release PR that release-please opened ships anything: release-please tracks it by label,
 # so another PR whose title happens to start with "release" is just an ordinary merge.
@@ -103,6 +104,7 @@ jobs:
 
     steps:
       - name: Check release secrets
+        id: secrets
         env:
           RELEASE_KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
           RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
@@ -112,12 +114,19 @@ jobs:
         run: |
           missing=()
           for name in RELEASE_KEYSTORE_BASE64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS \
-            RELEASE_KEY_PASSWORD PLAY_SERVICE_ACCOUNT_JSON; do
+            RELEASE_KEY_PASSWORD; do
             [ -n "${!name}" ] || missing+=("$name")
           done
           if [ ${#missing[@]} -gt 0 ]; then
             echo "::error::Missing repo secrets: ${missing[*]}"
             exit 1
+          fi
+          # Play is optional: without a service account the release still builds, signs and
+          # attaches the APKs, and only the Play upload is skipped.
+          if [ -n "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "play=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::No PLAY_SERVICE_ACCOUNT_JSON secret; skipping the Play upload"
           fi
 
       - name: Checkout
@@ -160,7 +169,11 @@ jobs:
           keyAlias=$RELEASE_KEY_ALIAS
           keyPassword=$RELEASE_KEY_PASSWORD
           EOF
-          echo "$PLAY_SERVICE_ACCOUNT_JSON" > app/play-service-account.json
+          # app/build.gradle.kts configures Play publishing whenever this file exists, so it's only
+          # written when there's an account to put in it.
+          if [ -n "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "$PLAY_SERVICE_ACCOUNT_JSON" > app/play-service-account.json
+          fi
 
       - name: Build signed APKs and Play bundle
         run: ./gradlew :app:assembleFullRelease :app:assembleFdroidRelease :app:bundleFullRelease --stacktrace
@@ -180,4 +193,5 @@ jobs:
       # Reuses the bundle built above (the task is up to date), so Play gets the same AAB that
       # was just attached to the release.
       - name: Upload bundle to Play internal track
+        if: ${{ steps.secrets.outputs.play == 'true' }}
         run: ./gradlew :app:publishFullReleaseBundle --stacktrace
