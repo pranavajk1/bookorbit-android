@@ -1,13 +1,18 @@
 # Play Store listing copy
 
+The same text as `fastlane/metadata/android/en-US/`, which is what gets uploaded; keep them in step.
+
+## Title (max 30 characters)
+Orbiter – for BookOrbit (23 chars)
+
 ## Short description (max 80 characters)
-Your self-hosted ebook & audiobook library client. (56 chars)
+Read and listen to your self-hosted BookOrbit library. (54 chars)
 
 ## Full description (max 4000 characters)
-BookOrbit is a native Android client for your own self-hosted BookOrbit
+Orbiter is a native Android client for your own self-hosted BookOrbit
 server — a personal library for ebooks and audiobooks that you control.
 
-BookOrbit does not host any content itself. Point the app at your own
+Orbiter does not host any content itself. Point the app at your own
 BookOrbit server and get a fast, native way to browse, read, and listen
 to your library on your phone or tablet.
 
@@ -24,3 +29,9 @@ FEATURES
 REQUIREMENTS
 You need access to a running BookOrbit server to use this app. The app
 does not provide or host a server.
+
+ABOUT
+Orbiter is an independent, unofficial app. It is not made, approved or
+endorsed by the BookOrbit project. It began as a fork of the community
+BookOrbit Android client and is free software under the GNU AGPLv3:
+https://github.com/pranavajk1/bookorbit-android

@@ -1,18 +1,22 @@
-# BookOrbit — Android (native)
+# Orbiter — for BookOrbit (Android)
 
-Native Kotlin / Jetpack Compose client for a self-hosted
+Orbiter is a native Kotlin / Jetpack Compose client for a self-hosted
 [BookOrbit](https://github.com/bookorbit/bookorbit) server. This is a **standalone Gradle project** —
 open this repository's root directly in Android Studio.
 
-> User-facing docs: **https://deranjer.github.io/bookorbit-android/** (source in [`website/`](website/)).
-> Privacy policy: **https://deranjer.github.io/bookorbit-android/privacy.html**.
-> Planned work: see [`ROADMAP.md`](ROADMAP.md).
-> Also available via [F-Droid](https://deranjer.github.io/fdroid/repo) (self-hosted repo).
+Orbiter is an independent, unofficial app: it is not made, approved or endorsed by the BookOrbit
+project. It started as a fork of the community
+[BookOrbit Android app](https://github.com/deranjer/bookorbit-android) by deranjer and now follows
+its own design and release line (application id `com.pranavajk.orbiter`).
 
-> **Status:** this is the BookOrbit mobile client. It supports auth + OIDC, library browsing, search,
-> smart scopes, collections, authors/series, book detail, the foliate.js ebook reader, the Media3
-> audiobook player (with sleep timer and Chromecast), and downloads/offline. See
-> [Architecture & conventions](#architecture--conventions) below, the
+> User-facing docs: **https://pranavajk1.github.io/bookorbit-android/** (source in [`website/`](website/)).
+> Privacy policy: **https://pranavajk1.github.io/bookorbit-android/privacy.html**.
+> Planned work: see [`ROADMAP.md`](ROADMAP.md).
+
+> **Status:** it supports auth + OIDC, library browsing, search, smart scopes, collections,
+> authors/series, book detail, the foliate.js ebook reader with offline dictionaries, the PDF and
+> comic readers, the Media3 audiobook player (with sleep timer and Chromecast), and
+> downloads/offline. See [Architecture & conventions](#architecture--conventions) below, the
 > [Cross-repo couplings](#cross-repo-couplings) section, and [`ROADMAP.md`](ROADMAP.md) for what's next.
 
 ## Prerequisites
@@ -20,7 +24,7 @@ open this repository's root directly in Android Studio.
 | Tool               | Version                                | Notes                                                   |
 | ------------------ | -------------------------------------- | ------------------------------------------------------- |
 | **Android Studio** | Ladybug (2024.2) or newer              | Easiest path; bundles a compatible JDK + SDK manager.   |
-| **JDK**            | 17+ (21 recommended)                   | Android Studio's bundled JBR works. CI uses Temurin 21. |
+| **JDK**            | 17+ (25 recommended)                   | Android Studio's bundled JBR works. CI uses Temurin 25. |
 | **Android SDK**    | Platform **36**, Build-Tools 35+       | Installed via Android Studio's SDK Manager.             |
 | **A device**       | Emulator (API 26+) or a physical phone | Min SDK is **26**; compile/target SDK is **36**.        |
 
@@ -49,7 +53,7 @@ right version (8.11.1) on first run.
 3. Pick a device in the toolbar's device dropdown (or create one in **Device Manager**).
 4. Click **Run ▶**. Studio builds, installs, and launches the app.
 
-The debug variant installs as application id **`com.bookorbit.debug`** (the `.debug` suffix lets debug
+The debug variant installs as application id **`com.pranavajk.orbiter.debug`** (the `.debug` suffix lets debug
 and release builds coexist on one device).
 
 ## Run it from the command line
@@ -66,7 +70,7 @@ From the repository root:
 Launch after installing:
 
 ```bash
-adb shell monkey -p com.bookorbit.debug -c android.intent.category.LAUNCHER 1
+adb shell monkey -p com.pranavajk.orbiter.debug -c android.intent.category.LAUNCHER 1
 ```
 
 (`adb` lives in `<sdk>/platform-tools/`.) To start an emulator headlessly:

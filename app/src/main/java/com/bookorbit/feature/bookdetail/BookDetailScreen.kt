@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -56,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.pluralStringResource
@@ -64,6 +66,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -75,6 +78,8 @@ import com.bookorbit.core.db.DownloadEntity
 import com.bookorbit.core.model.BookAnnotation
 import com.bookorbit.core.model.BookDetail
 import com.bookorbit.core.model.BookFiles
+import com.bookorbit.feature.downloads.RemoveDownloadDialog
+import com.bookorbit.feature.downloads.isCompleteDownloadStatus
 import com.bookorbit.feature.reader.highlightColor
 import com.bookorbit.ui.LocalBookAvailability
 import com.bookorbit.ui.LocalImageUrls
@@ -419,16 +424,19 @@ private fun PrimaryActions(
 @Composable
 private fun DownloadControl(download: DownloadEntity?, actions: BookDetailActions, modifier: Modifier) {
     val tokens = BookOrbitTheme.tokens
-    when (download?.status) {
-        "COMPLETE" -> SecondaryButton(stringResource(R.string.downloaded), actions.onRemoveDownload, modifier, icon = Icons.Outlined.CheckCircle)
-        "DOWNLOADING" -> Row(
+    var confirmRemove by remember { mutableStateOf(false) }
+    if (confirmRemove) RemoveDownloadDialog(download?.title, onConfirm = actions.onRemoveDownload, onDismiss = { confirmRemove = false })
+    when {
+        download?.status?.isCompleteDownloadStatus() == true ->
+            SecondaryButton(stringResource(R.string.downloaded), { confirmRemove = true }, modifier, icon = Icons.Outlined.CheckCircle)
+        download?.status == "DOWNLOADING" -> Row(
             modifier.height(40.dp).clip(MaterialTheme.shapes.small).border(1.dp, tokens.input, MaterialTheme.shapes.small).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CircularProgressIndicator(progress = { download.progress }, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
             Text(stringResource(R.string.downloading, (download.progress * 100).toInt()), style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 8.dp))
         }
-        "FAILED" -> SecondaryButton(stringResource(R.string.retry_download), actions.onDownload, modifier, icon = Icons.Outlined.Download)
+        download?.status == "FAILED" -> SecondaryButton(stringResource(R.string.retry_download), actions.onDownload, modifier, icon = Icons.Outlined.Download)
         else -> SecondaryButton(stringResource(R.string.download), actions.onDownload, modifier, icon = Icons.Outlined.Download)
     }
 }
@@ -438,26 +446,26 @@ private fun DownloadControl(download: DownloadEntity?, actions: BookDetailAction
 private fun DetailTabs(book: BookDetail, ui: BookDetailViewModel.UiState, actions: BookDetailActions) {
     val tokens = BookOrbitTheme.tokens
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    // Each label with the count it holds, if it shows one.
     val labels = listOf(
-        stringResource(R.string.detail_tab_details),
-        stringResource(R.string.detail_tab_files),
-        if (ui.highlights.isNotEmpty()) stringResource(R.string.detail_tab_highlights_n, ui.highlights.size) else stringResource(R.string.detail_tab_highlights),
+        stringResource(R.string.detail_tab_details) to null,
+        stringResource(R.string.detail_tab_files) to null,
+        stringResource(R.string.detail_tab_highlights) to ui.highlights.size.takeIf { it > 0 },
     )
     Column(Modifier.padding(top = 8.dp)) {
         Row(Modifier.padding(horizontal = 12.dp)) {
-            labels.forEachIndexed { index, label ->
+            labels.forEachIndexed { index, (label, count) ->
                 val selected = index == tab
+                val color = if (selected) tokens.foreground else tokens.mutedForeground
                 Column(
                     Modifier.width(IntrinsicSize.Max).clip(MaterialTheme.shapes.small).clickable { tab = index }.padding(horizontal = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(
-                        label,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = if (selected) tokens.foreground else tokens.mutedForeground,
-                        modifier = Modifier.padding(vertical = 10.dp),
-                    )
-                    Box(Modifier.height(2.dp).fillMaxWidth().background(if (selected) tokens.foreground else androidx.compose.ui.graphics.Color.Transparent))
+                    Row(Modifier.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(label, style = MaterialTheme.typography.labelLarge, color = color)
+                        if (count != null) TabCount(count, color, Modifier.padding(start = 6.dp))
+                    }
+                    Box(Modifier.height(2.dp).fillMaxWidth().background(if (selected) tokens.foreground else Color.Transparent))
                 }
             }
         }
@@ -468,6 +476,22 @@ private fun DetailTabs(book: BookDetail, ui: BookDetailViewModel.UiState, action
             else -> HighlightsTab(ui.highlights)
         }
     }
+}
+
+/** A tab's count as a small muted pill beside its label, so it reads as a count and not part of the name. */
+@Composable
+private fun TabCount(count: Int, color: Color, modifier: Modifier = Modifier) {
+    Text(
+        count.toString(),
+        style = MaterialTheme.typography.labelSmall,
+        color = color,
+        textAlign = TextAlign.Center,
+        modifier = modifier
+            .clip(CircleShape)
+            .background(BookOrbitTheme.tokens.muted)
+            .defaultMinSize(minWidth = 20.dp)
+            .padding(horizontal = 6.dp, vertical = 1.dp),
+    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)

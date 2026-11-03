@@ -1,7 +1,7 @@
-BookOrbit is a native Android client for your own self-hosted BookOrbit
+Orbiter is a native Android client for your own self-hosted BookOrbit
 server — a personal library for ebooks and audiobooks that you control.
 
-BookOrbit does not host any content itself. Point the app at your own
+Orbiter does not host any content itself. Point the app at your own
 BookOrbit server and get a fast, native way to browse, read, and listen
 to your library on your phone or tablet.
 
@@ -18,3 +18,9 @@ FEATURES
 REQUIREMENTS
 You need access to a running BookOrbit server to use this app. The app
 does not provide or host a server.
+
+ABOUT
+Orbiter is an independent, unofficial app. It is not made, approved or
+endorsed by the BookOrbit project. It began as a fork of the community
+BookOrbit Android client and is free software under the GNU AGPLv3:
+https://github.com/pranavajk1/bookorbit-android

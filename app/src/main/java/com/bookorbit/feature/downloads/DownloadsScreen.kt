@@ -17,6 +17,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -54,6 +57,10 @@ internal fun DownloadsContent(
     coverModel: (DownloadEntity) -> Any? = { item -> item.coverLocalPath?.let { LocalRef.parse(it).toUri() } },
 ) {
     val tokens = BookOrbitTheme.tokens
+    var pendingRemoval by remember { mutableStateOf<DownloadEntity?>(null) }
+    pendingRemoval?.let { item ->
+        RemoveDownloadDialog(item.title, onConfirm = { onDelete(item.bookId) }, onDismiss = { pendingRemoval = null })
+    }
     if (downloads.isEmpty()) {
         Box(Modifier.fillMaxSize(), Alignment.Center) {
             EmptyState(Icons.Outlined.DownloadForOffline, stringResource(R.string.no_downloads_yet))
@@ -92,7 +99,7 @@ internal fun DownloadsContent(
                     }
                 },
                 trailing = {
-                    IconButton(onClick = { onDelete(item.bookId) }) {
+                    IconButton(onClick = { pendingRemoval = item }) {
                         Icon(Icons.Outlined.Delete, contentDescription = stringResource(R.string.delete), tint = tokens.mutedForeground)
                     }
                 },

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BookOrbit</string>
+    <string name="app_name">Orbiter</string>
     <string name="a">A</string>
     <string name="add">Add %1$s…</string>
     <string name="add_note">Add note</string>
@@ -14,7 +14,6 @@
     <string name="bookmark">Bookmark %1$s</string>
     <string name="bookmark_this_page">Bookmark this page</string>
     <string name="bookmarks">Bookmarks</string>
-    <string name="bookorbit">BookOrbit</string>
     <string name="books_by">Books by %1$s</string>
     <string name="books_in">Books in %1$s</string>
     <string name="cancel">Cancel</string>
@@ -151,6 +150,9 @@
     <string name="tags">Tags</string>
     <string name="tap_for_menu">Tap for menu</string>
     <string name="this_removes_every_downloaded_file">This removes every downloaded file from this device. You can download books again later.</string>
+    <string name="remove_download_title">Remove download?</string>
+    <string name="remove_download_body">“%1$s” will be deleted from this device. You won’t be able to read it offline until you download it again.</string>
+    <string name="remove_download_body_untitled">This book will be deleted from this device. You won’t be able to read it offline until you download it again.</string>
     <string name="to">To</string>
     <string name="total_a_day">%1$s total · %2$s a day</string>
     <string name="upload_a_file">Upload a file</string>
@@ -204,7 +206,7 @@
     <string name="where_you_read">Where you read</string>
     <string name="year">Year</string>
     <string name="settings_material_you">Material You colours</string>
-    <string name="settings_material_you_desc">Match your wallpaper instead of the BookOrbit theme</string>
+    <string name="settings_material_you_desc">Match your wallpaper instead of the Orbiter theme</string>
     <string name="settings_security">Security</string>
     <string name="settings_trust_user_cas">Trust user-installed certificates</string>
     <string name="settings_trust_user_cas_desc">Allow device-installed CAs for %1$s only. Enable only if you trust every CA in your device\'s user store. Certificate validity and server names are still checked. Turning this off blocks new requests; transfers already in progress can finish.</string>
@@ -339,7 +341,7 @@
     <string name="comic_err_read">Couldn\'t read this comic. CBR and CB7 comics need a connection to your server.</string>
     <string name="login_err_invalid">Invalid username or password.</string>
     <string name="login_err_oidc">OIDC login failed</string>
-    <string name="server_err_local_network">BookOrbit needs the Nearby devices permission to reach a server on your local network. Allow it when asked, or in Android Settings → Apps → BookOrbit → Permissions.</string>
+    <string name="server_err_local_network">Orbiter needs the Nearby devices permission to reach a server on your local network. Allow it when asked, or in Android Settings → Apps → Orbiter → Permissions.</string>
     <string name="cast_allow_local_network">Cast: allow access to devices on your network</string>
     <string name="server_err_connect">Could not connect. Check the URL (including the port, e.g. :3000) and try again.</string>
     <string name="server_http_warning">Insecure connection. HTTP traffic — including your login — is sent unencrypted and can be read by others on the network. Use HTTPS whenever possible.</string>
@@ -381,7 +383,6 @@
     <string name="detail_tab_details">Details</string>
     <string name="detail_tab_files">Files</string>
     <string name="detail_tab_highlights">Highlights</string>
-    <string name="detail_tab_highlights_n">Highlights %1$d</string>
     <string name="detail_add_to_collection">Add to collection</string>
     <string name="detail_row_pages">Pages</string>
     <string name="detail_row_language">Language</string>

@@ -10,7 +10,7 @@ The combined PR 84–86 build passed 13 automated Android tests plus lint/JVM/bu
 This confirms the reported Cast regressions; it does not sign off the separate storage-recovery
 or private-CA acceptance matrix. The sections below retain the investigation and test procedure.
 
-Install the **full debug** APK (`com.bookorbit.debug`); fdroid builds intentionally have no Cast.
+Install the **full debug** APK (`com.pranavajk.orbiter.debug`); fdroid builds intentionally have no Cast.
 Use the same Wi-Fi network as the Chromecast and sign into your server in the debug app.
 
 1. Stream an MP3 audiobook locally, pause at a recognizable position, then connect to Cast.
@@ -46,7 +46,7 @@ It also replaces a local queue, checks that stale URLs are rejected, and verifie
 invalid-range responses and Cast CORS/preflight headers.
 
 Debug builds retain a bounded trace in `cache/cast-proxy-trace.log`, readable with
-`adb shell run-as com.bookorbit.debug cat cache/cast-proxy-trace.log`. It includes local request
+`adb shell run-as com.pranavajk.orbiter.debug cat cache/cast-proxy-trace.log`. It includes local request
 ranges and bytes/time as well as remote header timing, and survives wireless-debugging drops.
 
 Physical Pixel 9 Pro / Android 17 findings: pause/resume now works. Both streamed and downloaded

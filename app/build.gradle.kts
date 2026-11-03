@@ -55,8 +55,9 @@ android {
     }
 
     defaultConfig {
-        // Its own id, so this fork installs next to the community app and the official one.
-        applicationId = "com.pranavajk.bookorbit"
+        // Orbiter's own id, so it installs next to the community app and the official one. Fixed for
+        // good once the app is first published on Play.
+        applicationId = "com.pranavajk.orbiter"
         minSdk = 26
         targetSdk = 37
         // versionCode/versionName are bumped automatically by a companion step in
