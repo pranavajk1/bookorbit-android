@@ -1,0 +1,37 @@
+AntiFeatures:
+  NonFreeNet:
+    en-US: Translate in the reader sends the selected text to Google Translate or Microsoft Translator.
+Categories:
+  - Audiobook
+  - Ebook Reader
+License: AGPL-3.0-only
+AuthorName: Pranava
+WebSite: https://pranavajk1.github.io/orbiter-for-bookorbit/
+SourceCode: https://github.com/pranavajk1/orbiter-for-bookorbit
+IssueTracker: https://github.com/pranavajk1/orbiter-for-bookorbit/issues
+Changelog: https://github.com/pranavajk1/orbiter-for-bookorbit/blob/HEAD/CHANGELOG.md
+
+AutoName: Orbiter
+
+RepoType: git
+Repo: https://github.com/pranavajk1/orbiter-for-bookorbit.git
+Binaries: https://github.com/pranavajk1/orbiter-for-bookorbit/releases/download/v%v/orbiter-fdroid-%v.apk
+
+Builds:
+  - versionName: 0.1.0
+    versionCode: 100
+    commit: v0.1.0
+    subdir: app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-25-jdk-headless
+      - update-java-alternatives -a
+    gradle:
+      - fdroid
+
+AllowedAPKSigningKeys: a0b78169f8f88346af811dd593890b0f151b12387eb5ce382a349861352fc626
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.1.0
+CurrentVersionCode: 100
