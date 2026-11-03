@@ -9,7 +9,7 @@ name: Release
 # that push release-please tags it and creates the GitHub Release, and the publish job then
 #   - builds the signed "full" APK and AAB and the signed "fdroid" APK,
 #   - attaches all three to the GitHub Release, and
-#   - uploads the AAB to Play's internal track (promoting to production stays manual in Play Console),
+#   - uploads the AAB to Play's closed testing track (promoting to production stays manual in Play Console),
 #     but only once a PLAY_SERVICE_ACCOUNT_JSON secret exists; without one the Play step is skipped.
 #
 # Only the release PR that release-please opened ships anything: release-please tracks it by label,
@@ -192,6 +192,6 @@ jobs:
 
       # Reuses the bundle built above (the task is up to date), so Play gets the same AAB that
       # was just attached to the release.
-      - name: Upload bundle to Play internal track
+      - name: Upload bundle to Play closed testing
         if: ${{ steps.secrets.outputs.play == 'true' }}
         run: ./gradlew :app:publishFullReleaseBundle --stacktrace
